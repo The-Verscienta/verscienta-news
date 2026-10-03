@@ -1,0 +1,39 @@
+/* Codex-gated tokens — maps Kiln ember tokens to Verscienta wellness palette.
+   When the-codex-v6.html is readable, replace these values verbatim.
+   NEVER use purple/violet gradient, Inter-everywhere, or aurora blobs. */
+@theme {
+  --color-base-100: #fafaf7; /* warm paper, not cream #faf8f4 */
+  --color-base-200: #efe9df;
+  --color-base-300: #d9d0be;
+  --color-base-content: #2b2117;
+  --color-primary: #c45a1a; /* ember-derived, wellness earth */
+  --color-primary-content: #fff7ed;
+  --color-secondary: #2f6b4a; /* herbalism / herbal green */
+  --color-secondary-content: #f0fdf4;
+  --color-accent: #8b6b3a; /* ayurveda gold */
+  --color-accent-content: #fffbeb;
+  --color-neutral: #3f3a33;
+  --color-neutral-content: #fafaf7;
+  --color-info: #4a7a8c;
+  --color-success: #3a7a52;
+  --color-warning: #b45309;
+  --color-error: #9f2d2d;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --font-sans: ui-sans-system, -apple-system, "Inter", "Segoe UI", sans-serif;
+  --font-serif: ui-serif, Georgia, "Times New Roman", serif;
+}
+
+[data-theme="dark"] {
+  --color-base-100: #1a1916;
+  --color-base-200: #262320;
+  --color-base-300: #3a3630;
+  --color-base-content: #f5f1e8;
+  --color-primary: #e67a2e;
+}
+
+/* Cross-system shared with Kiln public-* hooks on delivery pages */
+:root { color-scheme: light dark; }
+body { background: var(--color-base-100); color: var(--color-base-content); }

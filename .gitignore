@@ -8,3 +8,17 @@ erl_crash.dump
 *.beam
 /config/*.secret.exs
 .elixir_ls/
+
+# Frontend
+/frontend/node_modules
+/frontend/.svelte-kit
+/frontend/build
+/frontend/dist
+
+# Env & secrets
+.env
+.env.local
+/frontend/.env
+
+# Services data (use volumes)
+pg_data/

@@ -1,0 +1,19 @@
+@import "tailwindcss";
+@import "./lib/tokens/codex.css";
+
+@layer base {
+  html { font-family: var(--font-sans); }
+  h1, h2, h3 { font-family: var(--font-serif); letter-spacing: -0.02em; }
+  /* Restore pointer on interactive elements — Tailwind v4 resets button cursor */
+  button, [role="button"], [phx-click], summary, select, label:has(input[type="checkbox"]) { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+}
+
+@layer components {
+  .btn { @apply inline-flex items-center justify-center rounded-md border px-3 py-1.5 text-sm font-medium transition; border-color: color-mix(in oklab, var(--color-base-content) 12%, transparent); }
+  .btn-primary { @apply bg-primary text-primary-content border-primary hover:brightness-105; }
+  .btn-ghost { @apply border-transparent hover:bg-base-200; }
+  .card { @apply bg-base-100 border border-base-content/10 rounded-lg; }
+  .field-input { @apply w-full rounded-md border border-base-content/15 bg-base-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30; }
+  .badge { @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium; }
+}
