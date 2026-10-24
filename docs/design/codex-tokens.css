@@ -1,0 +1,92 @@
+/* the codex — design tokens v6
+   One source of truth for color, type, space, motion, state, breakpoints.
+   Pair with codex-tokens.json for tooling / Figma. */
+:root{
+  /* ---- surfaces & ink ---- */
+  --bg:#0c0c0c;
+  --bg-2:#161616;
+  --bg-3:#1f1f1f;
+  --ink:#ffffff;        /* 19.6:1 on --bg (AAA) */
+  --ink-2:#c2c2c2;      /* 11.0:1 on --bg (AAA) */
+  --ink-3:#9a9a9a;      /* 6.9:1  on --bg (AA)  */
+  --line:#2a2a2a;
+  --line-2:#383838;
+
+  /* ---- accent: signature + tonal ramp ---- */
+  --zune:#f2660a;             /* signal · black ink 6.7:1 */
+  --zune-bright:#ff8636;      /* hover / focus fill */
+  --zune-deep:#c9540a;        /* pressed */
+  --zune-08:rgba(242,102,10,.08);   /* ambient wash */
+  --zune-16:rgba(242,102,10,.16);   /* half-lit */
+  --zune-28:rgba(242,102,10,.28);   /* resting affordance */
+  --zune-32:rgba(242,102,10,.34);   /* echo / ghost */
+
+  /* ---- semantic accent states (aliases over the ramp) ---- */
+  --accent-wash:var(--zune-08);
+  --accent-rest:var(--zune-28);
+  --accent:var(--zune);
+  --accent-hover:var(--zune-bright);
+  --accent-pressed:var(--zune-deep);
+  --focus-ring:var(--zune);
+  --focus-offset:3px;
+
+  /* ---- category palette (every fill clears 5.7:1 with black ink) ---- */
+  --c-world:#1ba1e2;      /* 7.2:1 */
+  --c-politics:#ff311d;   /* 5.7:1 */
+  --c-tech:#00aba9;       /* 7.4:1 */
+  --c-culture:#ff0d8e;    /* 5.7:1 */
+  --c-sport:#8cbf26;      /* 9.6:1 */
+  --c-money:#718d68;      /* 5.7:1 */
+  --c-violet:#be4eff;     /* 5.7:1 */
+
+  /* ---- status (borrowed from the palette; black ink) ---- */
+  --state-error:#ff311d;     /* 5.7:1 */
+  --state-success:#8cbf26;   /* 9.6:1 */
+  --state-warning:#e0a93b;   /* 9.9:1 */
+  --state-info:#1ba1e2;      /* 7.2:1 */
+  --disabled-bg:#1a1a1a;
+  --disabled-ink:#5a5a5a;    /* 2.5:1 — intentionally exempt (inactive) */
+
+  /* ---- reading canvas (rare, long-form only) ---- */
+  --read-bg:#f4f4f4;
+  --read-ink:#111111;        /* 17.2:1 */
+  --read-accent:#c9540a;
+
+  /* ---- type: variable axes + weight per role ---- */
+  --font-family:'Roboto Flex','Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif;
+  --w-display:250;   /* range 250–340, >=48px only */
+  --w-page:300;      /* range 300–400 */
+  --w-head:360;      /* section, 340–420 */
+  --w-body:360;      /* range 360–440, floor 360 */
+  --w-strong:560;    /* headline, 520–600 */
+  --w-label:640;     /* range 600–680 */
+  /* axes: wght 100–1000 · opsz 8–144 (font-optical-sizing:auto) */
+
+  /* ---- spacing scale (4px base) ---- */
+  --space-3xs:4px;
+  --space-2xs:8px;
+  --space-xs:12px;
+  --space-sm:16px;
+  --space-md:24px;
+  --space-lg:32px;
+  --space-xl:48px;
+  --space-2xl:64px;
+  --space-3xl:96px;
+  --space-4xl:128px;
+  --gut:clamp(20px,5vw,80px);   /* outer page margin */
+
+  /* ---- grid + breakpoints ---- */
+  --grid-cols:12;
+  --grid-gutter:24px;
+  --grid-max:1280px;
+  --bp-narrow:600px;
+  --bp-wide:960px;
+  --bp-ultra:1440px;
+
+  /* ---- motion ---- */
+  --ease:cubic-bezier(.2,.88,.2,1);
+  --dur-fast:160ms;   /* tile press, hover color */
+  --dur-base:260ms;   /* card lift, content push, weight-on-focus */
+  --dur-slow:380ms;   /* panorama / pivot pane */
+  --dur-reveal:700ms; /* one-time scroll entrance */
+}

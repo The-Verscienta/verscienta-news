@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>the codex · engine — backend architecture, contracts &amp; events</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,100..1000&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0c0c0c;
+  --bg-2:#161616;
+  --bg-3:#1f1f1f;
+  --ink:#ffffff;
+  --ink-2:#c2c2c2;
+  --ink-3:#9a9a9a;
+  --line:#2a2a2a;
+  --line-2:#383838;
+
+  --zune:#f2660a;
+  --zune-bright:#ff8636;
+  --zune-deep:#c9540a;
+  --zune-08:rgba(242,102,10,.08);
+  --zune-16:rgba(242,102,10,.16);
+  --zune-28:rgba(242,102,10,.28);   /* increased from .22 for better resting affordance */
+  --zune-32:rgba(242,102,10,.34);
+
+  --c-world:#1ba1e2;
+  --c-politics:#ff311d;
+  --c-tech:#00aba9;
+  --c-culture:#ff0d8e;
+  --c-sport:#8cbf26;
+  --c-money:#718d68;
+  --c-violet:#be4eff;
+
+  --gut: clamp(20px, 5vw, 80px);
+
+  --ease: cubic-bezier(.2, .88, .2, 1);
+  --dur-fast: 160ms;
+  --dur-base: 260ms;
+  --dur-slow: 380ms;
+
+  --w-display: 250;
+  --w-page: 300;
+  --w-head: 360;
+  --w-body: 360;
+  --w-strong: 560;
+  --w-label: 640;
+
+  /* spacing scale — 4px base */
+  --space-3xs:4px; --space-2xs:8px; --space-xs:12px; --space-sm:16px;
+  --space-md:24px; --space-lg:32px; --space-xl:48px; --space-2xl:64px;
+  --space-3xl:96px; --space-4xl:128px;
+
+  /* grid + breakpoints */
+  --grid-cols:12; --grid-gutter:24px; --grid-max:1280px;
+  --bp-narrow:600px; --bp-wide:960px; --bp-ultra:1440px;
+
+  /* semantic accent states — the ramp, named by job */
+  --accent-wash:var(--zune-08);
+  --accent-rest:var(--zune-28);
+  --accent:var(--zune);
+  --accent-hover:var(--zune-bright);
+  --accent-pressed:var(--zune-deep);
+  --focus-ring:var(--zune);
+  --focus-offset:3px;
+
+  /* status + disabled */
+  --state-error:#ff311d;
+  --state-success:#8cbf26;
+  --state-warning:#e0a93b;
+  --state-info:#1ba1e2;
+  --disabled-bg:#1a1a1a;
+  --disabled-ink:#5a5a5a;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Roboto Flex', system-ui, sans-serif;
+  font-optical-sizing:auto;
+  font-variation-settings:'wght' var(--w-body);
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+::selection{background:var(--zune);color:#000}
+
+:focus-visible{outline:2px solid var(--zune); outline-offset:3px}
+:focus:not(:focus-visible){outline:none}
+
+/* ===== shared ===== */
+.kicker{font-size:11px; font-variation-settings:'wght' var(--w-label); letter-spacing:.32em; text-transform:uppercase; color:var(--ink-3);}
+.giant{font-variation-settings:'wght' var(--w-display); line-height:.86; letter-spacing:-.02em; text-transform:lowercase; color:var(--ink);}
+a{color:inherit;text-decoration:none}
+
+/* Top strip */
+.strip{position:fixed; top:0; left:0; right:0; z-index:50; display:flex; align-items:center; gap:28px; padding:14px var(--gut); background:linear-gradient(#0c0c0c, #0c0c0ccc 70%, transparent); backdrop-filter:saturate(1.2);}
+.strip .mark{font-size:13px; font-variation-settings:'wght' 800; letter-spacing:.05em; text-transform:lowercase}
+.strip .mark b{color:var(--zune)}
+.strip .mark .v{color:var(--ink-3); font-variation-settings:'wght' 600; font-size:11px}
+.strip nav{display:flex; gap:22px; font-size:12px; font-variation-settings:'wght' 500; letter-spacing:.08em; text-transform:lowercase; color:var(--ink-3); margin-left:auto}
+.strip nav a{transition:color .2s; padding:2px 0}
+.strip nav a:hover, .strip nav a:focus-visible{color:var(--ink)}
+.strip .nav-toggle{display:none; background:none; border:1px solid var(--line-2); color:var(--ink-2); padding:8px 18px; font-size:11px; letter-spacing:.12em; text-transform:uppercase; cursor:pointer; transition:all .2s}
+.strip .nav-toggle:hover, .strip .nav-toggle:focus-visible{border-color:var(--zune); color:var(--ink)}
+
+@media(max-width:760px){
+  .strip nav{display:none; position:absolute; top:100%; left:0; right:0; background:#0c0c0c; padding:22px var(--gut); flex-direction:column; gap:18px; border-top:1px solid var(--line); z-index:60}
+  .strip nav.open{display:flex}
+  .strip .nav-toggle{display:block}
+}
+
+/* Hero */
+.pano{position:relative; min-height:100vh; padding:0 var(--gut); display:flex; flex-direction:column; justify-content:flex-end; padding-bottom:7vh; overflow:hidden}
+.pano .deco{position:absolute; top:0; right:-6vw; width:46vw; height:100%; background:var(--zune); opacity:.07; transform:skewX(-9deg); pointer-events:none}
+.pano .pano-title{font-size:clamp(80px, 25vw, 400px); white-space:nowrap; margin-bottom:-.04em; margin-right:calc(-1 * var(--gut) - 8vw)}
+.pano .pano-title em{font-style:normal; color:var(--zune)}
+.pano .sub{max-width:660px; margin-top:28px; font-size:clamp(16px,2vw,20px); font-variation-settings:'wght' var(--w-body); color:var(--ink-2)}
+.pano .sub em{color:var(--zune); font-style:normal; font-variation-settings:'wght' 500}
+.pano .meta{margin-top:36px; display:flex; gap:26px; flex-wrap:wrap}
+.pano .meta div .n{font-size:32px; font-variation-settings:'wght' var(--w-display); color:var(--zune)}
+.pano .meta div .l{font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-3)}
+.scrollhint{position:absolute; bottom:26px; right:var(--gut); font-size:11px; letter-spacing:.3em; text-transform:uppercase; color:var(--ink-3); animation:pulse 2.4s infinite}
+@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
+
+/* Changelog — dismissible */
+.changelog{margin:0 var(--gut); padding:26px 30px; border:1px solid var(--line); border-left:3px solid var(--zune); background:var(--zune-08); display:grid; gap:18px; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); position:relative}
+.changelog .close{position:absolute; top:14px; right:14px; background:none; border:none; color:var(--ink-3); font-size:18px; line-height:1; cursor:pointer; padding:4px; opacity:.7}
+.changelog .close:hover{opacity:1; color:var(--zune)}
+.changelog .cl-head{grid-column:1/-1; display:flex; align-items:baseline; gap:14px}
+.changelog .cl-head .t{font-size:14px; letter-spacing:.22em; text-transform:uppercase; font-variation-settings:'wght' var(--w-label); color:var(--zune)}
+.changelog .cl-head .s{font-size:13px; color:var(--ink-3)}
+.changelog .ci .n{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-3); font-variation-settings:'wght' 600; margin-bottom:6px}
+.changelog .ci .d{font-size:14px; color:var(--ink-2); line-height:1.5}
+.changelog .ci b{color:var(--ink); font-variation-settings:'wght' 520}
+
+/* Section shell */
+section.block{padding:clamp(70px,12vh,140px) var(--gut); position:relative}
+.block-head{display:flex; align-items:flex-end; gap:24px; margin-bottom:46px}
+.block-head .idx{font-size:13px; font-variation-settings:'wght' 800; color:var(--zune); letter-spacing:.1em; padding-bottom:.6em}
+.block-head h2{font-size:clamp(40px,8vw,104px); font-variation-settings:'wght' var(--w-display); line-height:.85; text-transform:lowercase; letter-spacing:-.02em}
+.block-head .tail{flex:1; height:1px; background:var(--line); margin-bottom:1em; min-width:20px}
+.lede{max-width:700px; font-size:clamp(16px,2vw,19px); color:var(--ink-2); margin-bottom:56px; font-variation-settings:'wght' var(--w-body)}
+.lede b{color:var(--ink); font-variation-settings:'wght' var(--w-strong)}
+.comp-label{font-size:11px; letter-spacing:.22em; text-transform:uppercase; color:var(--ink-3); margin:0 0 14px}
+.comp-label.spaced{margin-top:60px}
+
+/* Principles */
+.principles{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line)}
+.principle{background:var(--bg); padding:38px 32px; transition:background var(--dur-base) var(--ease)}
+.principle:hover{background:var(--bg-2)}
+.principle .pn{font-size:13px; font-variation-settings:'wght' 800; color:var(--zune); letter-spacing:.1em}
+.principle h3{font-size:25px; font-variation-settings:'wght' var(--w-page); text-transform:lowercase; margin:16px 0 12px; line-height:1.12}
+.principle p{font-size:14px; color:var(--ink-2); line-height:1.65}
+.principle p .new-tag{display:inline-block; margin-top:8px; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--zune); font-variation-settings:'wght' 640}
+
+/* Typography */
+.typescale{border-top:1px solid var(--line)}
+.typerow{display:grid; grid-template-columns:150px 1fr; gap:30px; align-items:baseline; padding:26px 0; border-bottom:1px solid var(--line)}
+.typerow .spec{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-3); line-height:1.7}
+.typerow .spec b{display:block; color:var(--ink-2); font-variation-settings:'wght' 640}
+.typerow .sample{overflow:hidden; color:var(--ink)}
+.s-display,.s-page,.s-head{text-transform:lowercase; white-space:nowrap; text-overflow:clip}
+.s-display{font-size:clamp(48px,11vw,124px); font-variation-settings:'wght' var(--w-display); line-height:.9; letter-spacing:-.02em}
+.s-page{font-size:clamp(38px,7vw,72px); font-variation-settings:'wght' var(--w-page); line-height:.95}
+.s-head{font-size:clamp(28px,4vw,44px); font-variation-settings:'wght' var(--w-head)}
+.s-title{font-size:23px; font-variation-settings:'wght' var(--w-strong); text-transform:none}
+.s-body{font-size:16px; font-variation-settings:'wght' var(--w-body); text-transform:none; white-space:normal; color:var(--ink-2); max-width:560px}
+.s-cap{font-size:11px; font-variation-settings:'wght' var(--w-label); letter-spacing:.22em; text-transform:uppercase; color:var(--ink-3)}
+
+.vf-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); margin-top:48px}
+.vf-card{background:var(--bg); padding:30px 30px 34px}
+.vf-card h4{font-size:15px; letter-spacing:.16em; text-transform:uppercase; color:var(--zune); font-variation-settings:'wght' 640; margin-bottom:8px}
+.vf-card p{font-size:14px; color:var(--ink-2); line-height:1.6; margin-bottom:20px}
+.vf-weight{font-size:clamp(40px,8vw,76px); line-height:.92; text-transform:lowercase; color:var(--ink); font-variation-settings:'wght' 250; transition:font-variation-settings var(--dur-slow) var(--ease)}
+.vf-card:hover .vf-weight, .vf-card:focus-within .vf-weight{font-variation-settings:'wght' 560}
+.vf-hint{margin-top:14px; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3)}
+.vf-range{width:100%; margin-top:18px; accent-color:var(--zune)}
+.vf-opsz-row{display:flex; align-items:baseline; gap:22px; flex-wrap:wrap}
+.vf-opsz-row .big{font-size:64px; font-variation-settings:'wght' 300; text-transform:lowercase; line-height:1}
+.vf-opsz-row .small{font-size:13px; font-variation-settings:'wght' 360; color:var(--ink-2); max-width:200px; line-height:1.5}
+
+.bleed-note{margin-top:46px; display:flex; gap:14px; align-items:center; color:var(--ink-3); font-size:13px}
+.bleed-note .swoosh{width:46px; height:46px; border:1px solid var(--zune); position:relative; flex:none}
+.bleed-note .swoosh::after{content:"Aa"; position:absolute; left:8px; top:0; font-size:40px; font-variation-settings:'wght' 250; color:var(--zune)}
+.bleed-note b{color:var(--ink)}
+
+/* Color + Ramp */
+.canvasrow{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line); border:1px solid var(--line); margin-bottom:46px}
+@media(max-width:620px){.canvasrow{grid-template-columns:1fr}}
+.canvasrow>div{padding:50px 32px}
+.canvasrow .dark{background:#0c0c0c}
+.canvasrow .lite{background:#f4f4f4; color:#111}
+.canvasrow h4{font-variation-settings:'wght' var(--w-display); font-size:32px; text-transform:lowercase; margin-bottom:8px}
+.canvasrow .accent{color:var(--zune); font-variation-settings:'wght' 600}
+.canvasrow .lite .accent{color:var(--zune-deep)}
+.canvasrow small{font-size:12px; letter-spacing:.1em; text-transform:uppercase; opacity:.55}
+
+.ramp{display:flex; border:1px solid var(--line); margin:0 0 54px; overflow:hidden}
+.ramp div{flex:1; height:84px; display:flex; align-items:flex-end; padding:8px 10px; font-size:10px; letter-spacing:.08em; text-transform:uppercase; font-variation-settings:'wght' 640}
+.ramp .r1{background:var(--zune-08); color:var(--ink-3)}
+.ramp .r2{background:var(--zune-16); color:var(--ink-2)}
+.ramp .r3{background:var(--zune-28); color:var(--ink)}
+.ramp .r4{background:var(--zune); color:#000}
+.ramp .r5{background:var(--zune-bright); color:#000}
+.ramp .r6{background:var(--zune-deep); color:#000}
+
+.swatches{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; margin-bottom:30px}
+.swatch{height:124px; position:relative; padding:14px; display:flex; flex-direction:column; justify-content:space-between; cursor:default; transition:transform var(--dur-base) var(--ease)}
+.swatch:hover{transform:translateY(-6px)}
+.swatch .cr{font-size:10px; letter-spacing:.06em; color:#000c; font-variation-settings:'wght' 700; align-self:flex-end}
+.swatch .nm{font-size:13px; font-variation-settings:'wght' 600; text-transform:lowercase; color:#000}
+.swatch .hx{font-size:10px; letter-spacing:.1em; color:#0009; font-variation-settings:'wght' 600}
+.swatch.darktxt .nm{color:#fff}.swatch.darktxt .hx{color:#fff9}.swatch.darktxt .cr{color:#fffc}
+.contrast-note{font-size:13px; color:var(--ink-3); margin-bottom:54px; line-height:1.6; max-width:640px}
+.contrast-note b{color:var(--ink-2)}
+
+/* Tokens with copy buttons */
+.tokens{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line)}
+.token{background:var(--bg); padding:24px 26px; position:relative}
+.token .label{font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink-3); margin-bottom:8px}
+.token .val{font-family:ui-monospace, monospace; font-size:14px; color:var(--ink-2); line-height:1.7}
+.token .desc{font-size:13px; color:var(--ink-3); margin-top:10px; line-height:1.5}
+.token .copy{position:absolute; top:18px; right:18px; background:none; border:1px solid var(--line-2); color:var(--ink-3); font-size:10px; padding:2px 8px; cursor:pointer; border-radius:2px; transition:all .2s}
+.token .copy:hover{border-color:var(--zune); color:var(--zune)}
+
+/* Tonal ramp usage examples (NEW) */
+.ramp-examples{display:flex; flex-wrap:wrap; gap:16px; margin:30px 0 50px}
+.ramp-examples .ex{display:flex; flex-direction:column; gap:6px}
+.ramp-examples button{font-family:inherit; font-size:13px; padding:10px 20px; border:none; cursor:pointer; transition:all var(--dur-fast) var(--ease); font-variation-settings:'wght' 600}
+.ramp-examples .resting{background:var(--zune-16); color:var(--ink)}
+.ramp-examples .hover{background:var(--zune); color:#000}
+.ramp-examples .active{background:var(--zune-bright); color:#000; transform:scale(.98)}
+.ramp-examples .label{font-size:11px; color:var(--ink-3); letter-spacing:.1em}
+
+/* Layout */
+.demo-wrap{border:1px solid var(--line); background:#0a0a0a; position:relative; overflow:hidden}
+.demo-tag{position:absolute; top:14px; left:16px; z-index:5; font-size:10px; letter-spacing:.25em; text-transform:uppercase; color:var(--ink-3); background:#0a0a0acc; padding:4px 8px}
+
+.pano-shell{position:relative}
+.panodemo{position:relative; height:440px; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; scroll-behavior:smooth; scrollbar-width:thin; scrollbar-color:var(--zune) #1a1a1a; -webkit-overflow-scrolling:touch}
+.panodemo::-webkit-scrollbar{height:6px}
+.panodemo::-webkit-scrollbar-thumb{background:var(--zune)}
+.panodemo::-webkit-scrollbar-track{background:#1a1a1a}
+.panotrack{position:relative; height:100%; display:flex; align-items:flex-end; padding:0 0 40px 0; width:max-content}
+.panoghost{position:absolute; left:40px; top:24px; font-size:120px; font-variation-settings:'wght' 250; text-transform:lowercase; color:#fff; opacity:.16; pointer-events:none; white-space:nowrap; will-change:transform}
+.panoghost b{color:var(--zune); font-variation-settings:'wght' 250; opacity:1}
+.panel{flex:none; width:300px; padding:0 36px; align-self:flex-end; scroll-snap-align:start; transition:outline .2s}
+.panel:focus-visible{outline:2px solid var(--zune); outline-offset:4px}
+.panel .cat{font-size:11px; font-variation-settings:'wght' 700; letter-spacing:.18em; text-transform:uppercase; margin-bottom:14px}
+.panel .img{height:150px; background:var(--bg-3); position:relative; overflow:hidden; margin-bottom:14px}
+.panel .img i{position:absolute; inset:0; opacity:.9}
+.panel h5{font-size:22px; font-variation-settings:'wght' var(--w-head); line-height:1.08; margin-bottom:8px}
+.panel .by{font-size:11px; color:var(--ink-3); letter-spacing:.05em}
+.panel.lead{width:380px}
+.panel.lead h5{font-size:29px}
+.pano-shell::after{content:''; position:absolute; top:0; right:0; bottom:14px; width:64px; pointer-events:none; background:linear-gradient(90deg,transparent,#0a0a0a); z-index:4}
+.pano-nav{position:absolute; top:14px; right:14px; z-index:6; display:flex; gap:8px}
+.pano-nav button{width:38px; height:38px; border:1px solid var(--line-2); background:#0a0a0acc; color:var(--ink-2); cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; transition:all var(--dur-fast) var(--ease)}
+.pano-nav button:hover,.pano-nav button:focus-visible{border-color:var(--zune); color:var(--ink); background:var(--zune-16)}
+.pano-fallback{font-size:12px; color:var(--ink-3); margin-top:14px; letter-spacing:.04em}
+.pano-fallback b{color:var(--ink-2)}
+.view-all-btn{display:inline-block; margin-top:12px; font-size:12px; color:var(--zune); text-decoration:underline; text-underline-offset:3px}
+
+.pivot{background:#0a0a0a}
+.pivot-tabs{display:flex; gap:30px; padding:26px 30px 0; overflow-x:auto; scrollbar-width:none}
+.pivot-tabs::-webkit-scrollbar{display:none}
+.pivot-tabs button{background:none; border:none; cursor:pointer; font-family:inherit; font-size:29px; font-variation-settings:'wght' 280; text-transform:lowercase; color:var(--ink-3); transition:color var(--dur-base) var(--ease), font-variation-settings var(--dur-base) var(--ease); padding-bottom:14px; position:relative; white-space:nowrap}
+.pivot-tabs button::after{content:''; position:absolute; left:0; right:0; bottom:0; height:2px; background:var(--zune); transform:scaleX(0); transform-origin:left; transition:transform var(--dur-base) var(--ease)}
+.pivot-tabs button.on{color:var(--ink); font-variation-settings:'wght' 420; transform:scale(1.01)}
+.pivot-tabs button.on::after{transform:scaleX(1)}
+.pivot-tabs button:not(.on):hover,.pivot-tabs button:not(.on):focus-visible{color:var(--ink-2)}
+.pivot-body{padding:8px 30px 34px; min-height:240px}
+.pivot-pane{display:none; animation:slidein var(--dur-slow) var(--ease)}
+.pivot-pane.on{display:block}
+@keyframes slidein{from{opacity:0; transform:translateX(40px)}to{opacity:1; transform:none}}
+.pivot-list{max-width:580px}
+.pl-item{display:flex; align-items:center; gap:14px; padding:13px 0; border-top:1px solid var(--line); font-size:15px; font-variation-settings:'wght' var(--w-body); color:var(--ink-2)}
+.pl-item .pl-dot{width:8px; height:8px; flex:none}
+.pl-item .pl-cat{font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); font-variation-settings:'wght' 640; width:62px; flex:none}
+.pl-item .pl-rank{font-size:26px; font-variation-settings:'wght' 250; color:var(--zune); width:26px; flex:none; line-height:1}
+.pl-item .pl-meta{margin-left:auto; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); white-space:nowrap}
+
+.tilegrid{display:grid; grid-template-columns:repeat(4,1fr); grid-auto-rows:150px; gap:14px}
+@media(max-width:760px){.tilegrid{grid-template-columns:repeat(2,1fr)}}
+.tile{position:relative; padding:18px; overflow:hidden; display:flex; flex-direction:column; justify-content:flex-end; transition:transform var(--dur-fast) var(--ease)}
+.tile:hover{transform:scale(.985)}
+.tile.wide{grid-column:span 2}
+.tile.tall{grid-row:span 2}
+.tile .tt{font-size:11px; font-variation-settings:'wght' 800; letter-spacing:.12em; text-transform:uppercase; opacity:.92}
+.tile h6{font-variation-settings:'wght' var(--w-head); line-height:1.08; margin-top:6px}
+.tile.tall h6{font-size:25px}
+.tile h6.sm{font-size:17px}
+
+/* News */
+.comp-grid{display:grid; gap:30px}
+.breaking{display:flex; align-items:stretch; border:1px solid var(--line); overflow:hidden}
+.breaking .flag{background:var(--c-politics); color:#000; padding:14px 18px; font-size:12px; font-variation-settings:'wght' 800; letter-spacing:.12em; text-transform:uppercase; display:flex; align-items:center; white-space:nowrap}
+.breaking .txt{padding:14px 18px; font-size:16px; font-variation-settings:'wght' var(--w-body); color:var(--ink); display:flex; align-items:center}
+.breaking .txt b{font-variation-settings:'wght' 600}
+
+.newscard{background:var(--bg); display:flex; flex-direction:column; position:relative; transition:transform var(--dur-base) var(--ease), box-shadow var(--dur-base) var(--ease)}
+.newscard:hover{transform:translateY(-5px); box-shadow:0 14px 32px -12px rgba(0,0,0,.65)}
+.newscard::after{content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--zune-28); transition:background-color var(--dur-base) var(--ease)}
+.newscard:hover::after,.newscard:focus-within::after,.newscard:focus-visible::after{background:var(--zune)}
+.newscard .ph{height:170px; position:relative; overflow:hidden}
+.newscard .ph i{position:absolute; inset:0}
+.newscard .ph .cat{position:absolute; left:0; bottom:0; font-size:10px; font-variation-settings:'wght' 800; letter-spacing:.14em; text-transform:uppercase; color:#000; padding:5px 10px}
+.newscard .pad{padding:20px 22px 24px}
+.newscard h5{font-size:21px; font-variation-settings:'wght' var(--w-head); line-height:1.12; margin-bottom:12px}
+.newscard .foot{display:flex; justify-content:space-between; font-size:11px; color:var(--ink-3); letter-spacing:.04em}
+.newscard .foot .au{color:var(--ink-2)}
+
+.bleed-head{font-size:clamp(42px, 7vw, 88px); font-variation-settings:'wght' 250; line-height:.9; letter-spacing:-.025em; text-transform:lowercase; margin-bottom:14px}
+.bleed-head .keep{display:block}
+.bleed-head .echo{display:block; overflow:hidden; white-space:nowrap; text-overflow:clip; color:var(--zune-32)}
+.bleed-head em{color:var(--zune); font-style:normal}
+.bleed-subhead{font-size:clamp(26px, 5vw, 48px); font-variation-settings:'wght' 250; line-height:.95; letter-spacing:-.02em; text-transform:lowercase; margin:32px 0 12px; color:var(--ink-2)}
+
+/* Social */
+.feedpost{background:var(--bg); padding:22px 24px; transition:transform var(--dur-fast) var(--ease); position:relative}
+.feedpost::before{content:''; position:absolute; left:0; top:18px; bottom:18px; width:3px; background:var(--c-tech); opacity:.28; transition:opacity var(--dur-fast) var(--ease)}
+.feedpost:hover::before,.feedpost:focus-within::before{opacity:1}
+.feedpost:hover{transform:translateY(-3px)}
+.feedpost .top{display:flex; align-items:center; gap:14px; margin-bottom:16px}
+.feedpost .av{width:46px; height:46px; flex:none; display:flex; align-items:center; justify-content:center; font-variation-settings:'wght' 800; font-size:18px; color:#000}
+.feedpost .who .n{font-size:15px; font-variation-settings:'wght' 600}
+.feedpost .who .h{font-size:12px; color:var(--ink-3)}
+.feedpost .when{margin-left:auto; font-size:11px; color:var(--ink-3); letter-spacing:.08em; text-transform:uppercase}
+.feedpost .body{font-size:16px; font-variation-settings:'wght' var(--w-body); color:var(--ink); line-height:1.5; margin-bottom:18px}
+.feedpost .body span{color:var(--zune)}
+.reactions{display:flex; gap:24px; flex-wrap:wrap}
+.reactions button{background:none; border:none; color:var(--ink-3); font-family:inherit; font-size:12px; letter-spacing:.12em; text-transform:uppercase; font-variation-settings:'wght' 600; cursor:pointer; display:flex; align-items:center; gap:8px; transition:color .2s; padding:4px 0}
+.reactions button:hover,.reactions button:focus-visible{color:var(--ink)}
+.reactions button .ic{width:7px; height:7px; background:currentColor; display:inline-block}
+.reactions button.liked{color:var(--zune)}
+
+.density-bar{display:flex; align-items:center; gap:12px; margin-bottom:20px}
+.density-bar .seg{display:flex; border:1px solid var(--line-2)}
+.density-bar .seg button{background:none; border:none; color:var(--ink-3); font-family:inherit; font-size:11px; letter-spacing:.12em; text-transform:uppercase; font-variation-settings:'wght' 640; padding:8px 16px; cursor:pointer; transition:all var(--dur-fast) var(--ease)}
+.density-bar .seg button.on{background:var(--zune); color:#000}
+.density-bar .lbl{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-3)}
+
+.feed{border-top:1px solid var(--line)}
+.feed .row{display:flex; gap:14px; align-items:flex-start; padding:18px 4px; border-bottom:1px solid var(--line); transition:background var(--dur-fast) var(--ease)}
+.feed .row:hover{background:var(--bg-2)}
+.feed .row .av{width:40px; height:40px; flex:none; display:flex; align-items:center; justify-content:center; font-variation-settings:'wght' 800; font-size:15px; color:#000}
+.feed .row .main{flex:1; min-width:0}
+.feed .row .line1{display:flex; gap:8px; align-items:baseline; font-size:14px}
+.feed .row .line1 .n{font-variation-settings:'wght' 600; color:var(--ink)}
+.feed .row .line1 .h{color:var(--ink-3); font-size:12px}
+.feed .row .line1 .t{margin-left:auto; color:var(--ink-3); font-size:11px; letter-spacing:.08em; text-transform:uppercase; white-space:nowrap}
+.feed .row .txt{font-size:14px; color:var(--ink-2); line-height:1.5; margin-top:4px}
+.feed .row .txt span{color:var(--zune)}
+.feed.compact .row{padding:7px 4px; align-items:center}
+.feed.compact .row .av{width:24px; height:24px; font-size:11px}
+.feed.compact .row .line1{font-size:13px}
+.feed.compact .row .txt{margin-top:0; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.feed.compact .row .main{display:flex; flex-direction:column; gap:1px}
+
+/* Comment thread (NEW) */
+.comment-thread{margin-top:40px; border-top:1px solid var(--line); padding-top:24px}
+.comment{display:flex; gap:14px; padding:16px 0; border-bottom:1px solid var(--line)}
+.comment:last-child{border-bottom:none}
+.comment .av{width:36px; height:36px; flex:none; display:flex; align-items:center; justify-content:center; font-variation-settings:'wght' 800; font-size:14px; color:#000; background:var(--c-tech)}
+.comment .body{flex:1}
+.comment .meta{font-size:12px; color:var(--ink-3); margin-bottom:4px}
+.comment .meta b{color:var(--ink); font-variation-settings:'wght' 600}
+.comment .txt{font-size:14px; color:var(--ink-2); line-height:1.5}
+.comment .reply{font-size:12px; color:var(--zune); margin-top:6px; cursor:pointer}
+.comment .reply:hover{text-decoration:underline}
+
+/* Profile */
+.profhead{position:relative; background:#0a0a0a; overflow:hidden; padding:40px 34px}
+.profhead .bigname{font-size:clamp(44px,9vw,88px); font-variation-settings:'wght' 250; text-transform:lowercase; line-height:.88; white-space:nowrap; overflow:hidden}
+.profhead .handle{color:var(--ink-3); margin-top:14px; font-size:14px; letter-spacing:.1em}
+.profhead .bio{max-width:520px; margin-top:18px; color:var(--ink-2); font-size:15px; font-variation-settings:'wght' var(--w-body)}
+.profhead .stats{display:flex; gap:34px; margin-top:26px; flex-wrap:wrap}
+.profhead .stats div .n{font-size:26px; font-variation-settings:'wght' 250; color:var(--zune)}
+.profhead .stats div .l{font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-3)}
+.profhead .follow{position:absolute; top:36px; right:34px; background:var(--zune); color:#000; border:none; font-family:inherit; font-variation-settings:'wght' 700; font-size:12px; letter-spacing:.14em; text-transform:uppercase; padding:13px 26px; cursor:pointer; transition:background var(--dur-fast) var(--ease)}
+.profhead .follow:hover,.profhead .follow:focus-visible{background:var(--zune-bright)}
+.profhead .follow.off{background:transparent; color:var(--ink); box-shadow:inset 0 0 0 1px var(--ink-3)}
+.profhead .follow.off:hover{box-shadow:inset 0 0 0 1px var(--zune)}
+
+/* Notifications */
+.notif{display:flex; gap:16px; align-items:center; padding:15px 20px; border-bottom:1px solid var(--line)}
+.notif:first-child{border-top:1px solid var(--line)}
+.notif .bar{width:3px; align-self:stretch; flex:none}
+.notif .ico{width:34px; height:34px; flex:none; display:flex; align-items:center; justify-content:center; font-variation-settings:'wght' 800; color:#000; font-size:13px}
+.notif .kind{font-size:10px; letter-spacing:.16em; text-transform:uppercase; font-variation-settings:'wght' 640; width:74px; flex:none}
+.notif .nt{font-size:14px; font-variation-settings:'wght' var(--w-body); color:var(--ink-2)}
+.notif .nt b{color:var(--ink); font-variation-settings:'wght' 600}
+.notif .nw{margin-left:auto; font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.1em; white-space:nowrap}
+
+/* Motion */
+.motiongrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line)}
+.motioncard{background:var(--bg); padding:30px 28px}
+.motioncard h4{font-size:20px; font-variation-settings:'wght' var(--w-page); text-transform:lowercase; margin-bottom:10px}
+.motioncard p{font-size:13px; color:var(--ink-2); line-height:1.6}
+.motioncard .demo{height:54px; margin-top:18px; position:relative; overflow:hidden; background:#000; border:1px solid var(--line)}
+.motioncard .demo .blk{position:absolute; top:50%; left:14px; width:30px; height:30px; background:var(--zune); transform:translateY(-50%)}
+
+.m-slide .blk{animation:mslide var(--dur-slow) infinite var(--ease)}
+@keyframes mslide{0%{left:-30px}32%,68%{left:calc(100% - 44px)}100%{left:-30px}}
+.m-stack .blk{animation:mstack var(--dur-slow) infinite var(--ease)}
+.m-stack .blk:nth-child(2){left:54px; background:var(--c-tech); animation-delay:.1s}
+.m-stack .blk:nth-child(3){left:94px; background:var(--c-culture); animation-delay:.22s}
+@keyframes mstack{0%{opacity:0; transform:translate(32px,-50%)}26%,76%{opacity:1; transform:translate(0,-50%)}100%{opacity:0; transform:translate(32px,-50%)}}
+.m-turn .blk{animation:mturn var(--dur-slow) infinite var(--ease); transform-origin:left center}
+@keyframes mturn{0%,100%{transform:translateY(-50%) rotateY(86deg)}20%,72%{transform:translateY(-50%) rotateY(0deg)}}
+.m-lift .demo{background:var(--bg-2); border:none}
+.m-lift .blk{width:120px; height:38px; left:50%; top:50%; transform:translate(-50%,-50%); background:var(--zune); border-radius:2px; transition:transform var(--dur-base) var(--ease), box-shadow var(--dur-base) var(--ease)}
+.m-lift:hover .blk{transform:translate(-50%,-56%); box-shadow:0 16px 28px -10px rgba(0,0,0,.55)}
+.m-push .demo{background:var(--bg-2); border:none}
+.m-push .blk{width:110px; height:32px; left:20px; top:50%; transform:translateY(-50%); background:var(--zune); border-radius:2px; transition:transform var(--dur-base) var(--ease)}
+.m-push:hover .blk{transform:translate(28px, -50%)}
+
+.motion-tokens{margin-top:40px; font-size:13px; color:var(--ink-3)}
+.motion-tokens code{background:#111; padding:1px 6px; border-radius:2px; color:var(--ink-2)}
+
+.rm-note{margin-top:30px; border:1px solid var(--line); border-left:3px solid var(--c-tech); background:#0a0a0a; padding:22px 26px}
+.rm-note .t{font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--c-tech); font-variation-settings:'wght' 640; margin-bottom:10px}
+.rm-note p{font-size:14px; color:var(--ink-2); line-height:1.6; max-width:640px}
+.rm-note code{background:#111; padding:1px 6px; border-radius:2px; color:var(--ink-2); font-size:13px}
+
+/* Do / Don't */
+.ddgrid{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line); border:1px solid var(--line)}
+@media(max-width:680px){.ddgrid{grid-template-columns:1fr}}
+.dd{padding:34px 30px; background:var(--bg)}
+.dd .tag{font-size:13px; font-variation-settings:'wght' 800; letter-spacing:.14em; text-transform:uppercase; margin-bottom:22px; display:flex; align-items:center; gap:10px}
+.dd.do .tag{color:var(--c-sport)}
+.dd.dont .tag{color:var(--c-politics)}
+.dd .tag span{width:9px; height:9px; background:currentColor}
+.dd ul{list-style:none}
+.dd li{font-size:14px; color:var(--ink-2); padding:11px 0; border-bottom:1px solid var(--line); line-height:1.55}
+.dd li:last-child{border:none}
+.dd li b{color:var(--ink); font-variation-settings:'wght' 540}
+
+/* Footer */
+footer{padding:88px var(--gut) 56px; border-top:1px solid var(--line)}
+footer .big{font-size:clamp(40px,9vw,116px); font-variation-settings:'wght' 250; text-transform:lowercase; line-height:.85; letter-spacing:-.02em}
+footer .big em{font-style:normal; color:var(--zune)}
+footer .row{display:flex; justify-content:space-between; flex-wrap:wrap; gap:20px; margin-top:38px; font-size:12px; color:var(--ink-3); letter-spacing:.08em; text-transform:uppercase}
+
+/* Reveal */
+.reveal{opacity:0; transform:translateY(24px); transition:opacity .7s var(--ease), transform .7s var(--ease)}
+.reveal.in{opacity:1; transform:none}
+.stagger.in>*{animation:rise .6s var(--ease) backwards}
+.stagger.in>*:nth-child(1){animation-delay:.02s}
+.stagger.in>*:nth-child(2){animation-delay:.09s}
+.stagger.in>*:nth-child(3){animation-delay:.16s}
+.stagger.in>*:nth-child(4){animation-delay:.23s}
+.stagger.in>*:nth-child(5){animation-delay:.3s}
+.stagger.in>*:nth-child(6){animation-delay:.37s}
+@keyframes rise{from{opacity:0; transform:translateY(22px)}to{opacity:1; transform:none}}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001ms!important; animation-iteration-count:1!important; transition-duration:.001ms!important; scroll-behavior:auto!important}
+  .reveal{opacity:1!important; transform:none!important}
+  .panoghost{transform:none!important}
+  .scrollhint{animation:none!important}
+  .m-slide .blk,.m-stack .blk,.m-turn .blk{animation:none!important}
+  .m-stack .blk{opacity:1!important; transform:translateY(-50%)!important}
+  .m-turn .blk{transform:translateY(-50%)!important}
+  .pivot-pane{animation:none!important}
+  .panodemo{scroll-behavior:auto!important}
+}
+
+/* Tier-1 spec components */
+.spec-table{border:1px solid var(--line); border-bottom:none; margin:0 0 22px}
+.spec-table .st-row{display:grid; gap:16px; padding:13px 18px; border-bottom:1px solid var(--line); font-size:14px; color:var(--ink-2); align-items:center}
+.spec-table.cols-2 .st-row{grid-template-columns:1fr 1.5fr}
+.spec-table.cols-3 .st-row{grid-template-columns:1.4fr 1fr 1fr}
+.spec-table.cols-4 .st-row{grid-template-columns:1.3fr 1fr 1.1fr 1.5fr}
+.spec-table.cols-5 .st-row{grid-template-columns:1.3fr 1.3fr .7fr .7fr 1.5fr}
+.spec-table .st-row span:first-child{color:var(--ink); font-variation-settings:'wght' 520}
+.spec-table .st-head{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-3) !important; font-variation-settings:'wght' 640; background:var(--bg-2)}
+.spec-table .st-head span:first-child{color:var(--ink-3); font-variation-settings:'wght' 640}
+.spec-table .st-row.dim, .spec-table .st-row.dim span:first-child{color:var(--ink-3)}
+.spec-note{font-size:14px; color:var(--ink-3); line-height:1.65; max-width:680px; margin:0 0 26px}
+.spec-note b{color:var(--ink-2); font-variation-settings:'wght' 560}
+.spec-note code, .codeblock{font-family:ui-monospace, SFMono-Regular, Menlo, monospace}
+.spec-note code{background:#141414; padding:1px 6px; border-radius:2px; color:var(--ink-2); font-size:13px}
+.codeblock{font-size:13px; color:var(--ink-2); background:#0a0a0a; border:1px solid var(--line); border-left:3px solid var(--zune); padding:14px 18px; margin:0 0 20px; overflow-x:auto; line-height:1.65; white-space:pre-wrap; word-break:break-word}
+.scale{display:flex; flex-direction:column; gap:8px; margin:0 0 22px}
+.scale .sc{display:flex; align-items:center; gap:16px}
+.scale .sc i{height:14px; background:var(--zune); display:block; flex:none; max-width:70vw}
+.scale .sc span{font-size:12px; color:var(--ink-3); letter-spacing:.08em; font-variation-settings:'wght' 600}
+@media(max-width:620px){
+  .spec-table .st-row{font-size:12px; gap:8px; padding:11px 12px}
+  .spec-table.cols-4 .st-row, .spec-table.cols-5 .st-row{gap:6px}
+}
+
+/* backend diagrams */
+.arch{display:flex; flex-direction:column; gap:14px; border:1px solid var(--line); background:#0a0a0a; padding:24px}
+.tier{display:flex; flex-direction:column; gap:8px}
+.tier .tl{font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-3); font-variation-settings:'wght' 640}
+.tier .row{display:flex; gap:10px; flex-wrap:wrap}
+.node{flex:1; min-width:130px; border:1px solid var(--line-2); background:var(--bg-2); padding:12px 14px; font-size:12.5px; color:var(--ink-3); line-height:1.45}
+.node b{display:block; color:var(--ink); font-variation-settings:'wght' 560; font-size:13px; margin-bottom:3px; text-transform:lowercase}
+.node.edge{border-left:3px solid var(--zune)}
+.node.svc{border-left:3px solid var(--c-tech)}
+.node.data{border-left:3px solid var(--c-world)}
+.node.async{border-left:3px solid var(--c-violet)}
+.arch .bus{border:1px dashed var(--c-violet); color:var(--c-violet); text-align:center; padding:9px; font-size:11px; letter-spacing:.16em; text-transform:uppercase; font-variation-settings:'wght' 640}
+.arch .down{text-align:center; color:var(--ink-3); font-size:13px; line-height:1; margin:-4px 0}
+.flow{display:flex; align-items:stretch; flex-wrap:wrap; border:1px solid var(--line); background:#0a0a0a; margin:0 0 22px}
+.flow .step{flex:1; min-width:140px; padding:16px; border-right:1px solid var(--line)}
+.flow .step:last-child{border-right:none}
+.flow .step .sn{font-size:11px; color:var(--zune); font-variation-settings:'wght' 800; letter-spacing:.1em}
+.flow .step b{display:block; color:var(--ink); font-variation-settings:'wght' 540; font-size:14px; margin:7px 0 4px; text-transform:lowercase}
+.flow .step span{font-size:12px; color:var(--ink-3); line-height:1.5}
+@media(max-width:620px){ .node,.flow .step{min-width:46%} }
+</style>
+</head>
+<body>
+
+<div class="strip">
+  <div class="mark">the<b>·</b>codex <span class="v">engine</span></div>
+  <nav id="mainNav">
+    <a href="#principles">principles</a>
+    <a href="#contract">contract</a>
+    <a href="#status">status</a>
+    <a href="#architecture">architecture</a>
+    <a href="#publishing">publishing</a>
+    <a href="#feed">graph &amp; feed</a>
+    <a href="#events">events</a>
+    <a href="#tokens">tokens</a>
+  </nav>
+  <button class="nav-toggle" id="navToggle">menu</button>
+</div>
+
+<!-- HERO -->
+<header class="pano">
+  <div class="deco"></div>
+  <p class="kicker" style="margin-bottom:24px">the codex backend — contracts · data · events</p>
+  <h1 class="giant pano-title">the&nbsp;<em>engine</em></h1>
+  <p class="sub">The same design language, pointed inward. Where the front-end codex is type, color and motion, the engine is <em>contracts, data and events</em> — one system of opinions for the half of the product nobody sees, built so the front never has to guess.</p>
+  <div class="meta">
+    <div><div class="n">01</div><div class="l">principles</div></div>
+    <div><div class="n">02</div><div class="l">the contract</div></div>
+    <div><div class="n">03</div><div class="l">status</div></div>
+    <div><div class="n">04</div><div class="l">architecture</div></div>
+    <div><div class="n">05</div><div class="l">publishing</div></div>
+    <div><div class="n">06</div><div class="l">graph &amp; feed</div></div>
+    <div><div class="n">07</div><div class="l">events</div></div>
+  </div>
+  <div class="scrollhint">scroll &darr;</div>
+</header>
+
+<!-- GUARANTEES ribbon -->
+<div class="changelog reveal">
+  <div class="cl-head"><span class="t">what the engine guarantees</span><span class="s">the promises every endpoint keeps</span></div>
+  <div class="ci"><div class="n">01 · typed contract</div><div class="d">One grammar across every route: <b>nouns, cursor pages, ISO-UTC, opaque IDs</b>.</div></div>
+  <div class="ci"><div class="n">02 · idempotent writes</div><div class="d">Every mutation takes an <b>Idempotency-Key</b>; retries never double-write.</div></div>
+  <div class="ci"><div class="n">03 · typed errors</div><div class="d">No bare 500s — every failure is a <b>stable code + trace id</b> in problem+json.</div></div>
+  <div class="ci"><div class="n">04 · event-sourced</div><div class="d">State changes <b>emit events</b>; the log is the source of truth for fan-out.</div></div>
+  <div class="ci"><div class="n">05 · budgets enforced</div><div class="d">Latency, payload and rate <b>budgets are tokens</b>, not aspirations.</div></div>
+  <div class="ci"><div class="n">06 · versioned forever</div><div class="d">Breaking changes <b>only behind a new version</b>; old contracts keep working.</div></div>
+</div>
+
+<!-- 01 PRINCIPLES -->
+<section class="block" id="principles">
+  <div class="block-head reveal"><span class="idx">01</span><h2>principles</h2><span class="tail"></span></div>
+  <p class="lede reveal">A backend has a design language too. Not type and color — <b>contracts, data shapes and failure modes</b> — but the same discipline: a small set of opinions, applied everywhere, so the system is predictable before it is clever.</p>
+  <div class="principles stagger reveal">
+    <div class="principle"><div class="pn">i</div><h3>contract before code</h3><p>The API shape is the product surface. Design the contract first and implement behind it; the wire format outlives every rewrite of what sits underneath it.</p></div>
+    <div class="principle"><div class="pn">ii</div><h3>one grammar</h3><p>Every endpoint reads the same — plural nouns, cursor pages, UTC timestamps, opaque sortable IDs. Consistency beats cleverness; a developer should be able to guess the next route.</p></div>
+    <div class="principle"><div class="pn">iii</div><h3>boring on purpose</h3><p>Postgres until it genuinely hurts. Exotic stores earn their place with evidence, not enthusiasm. The interesting parts of the product should live in the product, not the plumbing.</p></div>
+    <div class="principle"><div class="pn">iv</div><h3>everything is an event</h3><p>State changes emit events; expensive reads are projections off the log. The append-only log is the source of truth for fan-out, search, notifications and audit.</p></div>
+    <div class="principle"><div class="pn">v</div><h3>fail loud, fail typed</h3><p>Every error is a typed envelope with a stable code and a trace id. Clients switch on the code, humans read the title, and nothing ever leaks a stack trace or a raw 500.</p></div>
+    <div class="principle"><div class="pn">vi</div><h3>budgets are law</h3><p>Latency, payload size and rate limits are named tokens, enforced at the edge — not numbers in a wiki that everyone has quietly stopped meeting.</p></div>
+  </div>
+</section>
+
+<!-- 02 THE CONTRACT -->
+<section class="block" id="contract">
+  <div class="block-head reveal"><span class="idx">02</span><h2>the contract</h2><span class="tail"></span></div>
+  <p class="lede reveal">If type is the grammar of the front-end, <b>the API is the grammar of the back</b>. REST over HTTP/2 is the spine: resources are nouns, behaviour is the verb, and every route is shaped the same so the surface is learnable from any single endpoint.</p>
+
+  <p class="comp-label reveal">resource grammar</p>
+  <div class="spec-table cols-3 reveal">
+    <div class="st-row st-head"><span>pattern</span><span>method</span><span>meaning</span></div>
+    <div class="st-row"><span>/v1/articles</span><span>GET</span><span>list, cursor-paged</span></div>
+    <div class="st-row"><span>/v1/articles</span><span>POST</span><span>create (idempotency-key)</span></div>
+    <div class="st-row"><span>/v1/articles/{id}</span><span>GET · PATCH · DELETE</span><span>read · partial update · remove</span></div>
+    <div class="st-row"><span>/v1/users/{id}/feed</span><span>GET</span><span>assembled timeline, cursor-paged</span></div>
+    <div class="st-row"><span>/v1/posts/{id}/reactions</span><span>POST · DELETE</span><span>add · remove a reaction</span></div>
+    <div class="st-row"><span>/v1/posts/{id}/comments</span><span>GET · POST</span><span>thread, cursor-paged</span></div>
+  </div>
+  <p class="spec-note reveal">Nesting stops at <b>one level</b> — <code>/posts/{id}/comments</code>, never <code>/users/{id}/posts/{id}/comments/{id}/replies</code>. Deeper relationships are queried by id, not by URL archaeology.</p>
+
+  <p class="comp-label spaced reveal">conventions — the rules every route obeys</p>
+  <div class="spec-table cols-2 reveal">
+    <div class="st-row st-head"><span>concern</span><span>rule</span></div>
+    <div class="st-row"><span>identifiers</span><span>ULID — opaque, sortable, no leaked sequence</span></div>
+    <div class="st-row"><span>timestamps</span><span>ISO-8601, UTC, always; clients localize</span></div>
+    <div class="st-row"><span>pagination</span><span>opaque cursor + limit; never offset</span></div>
+    <div class="st-row"><span>versioning</span><span>/v1 in path; new version for breaking change</span></div>
+    <div class="st-row"><span>writes</span><span>Idempotency-Key header; safe to retry</span></div>
+    <div class="st-row"><span>caching</span><span>ETag + If-None-Match → 304</span></div>
+  </div>
+
+  <p class="comp-label spaced reveal">the envelope — every list looks the same</p>
+  <div class="codeblock reveal">GET /v1/users/u_01J.../feed?limit=20
+
+200 OK   ETag: "9f2a..."
+{
+  "data": [ { "id": "po_01J...", "type": "post", "...": "..." } ],
+  "page": { "next": "eyJjdXJzb3IiOiI...", "has_more": true },
+  "meta": { "trace_id": "tr_01J..." }
+}</div>
+  <p class="spec-note reveal">A REST spine stays cacheable and boring. A thin <b>GraphQL gateway</b> may sit in front for the read-heavy feed, but it composes these same resources — it never becomes a second, contradictory contract.</p>
+</section>
+
+<!-- 03 STATUS & ERRORS -->
+<section class="block" id="status">
+  <div class="block-head reveal"><span class="idx">03</span><h2>status &amp; errors</h2><span class="tail"></span></div>
+  <p class="lede reveal">The front-end has a color ramp; the back-end has a <b>status palette</b>. Four families, each with a fixed meaning, and one error envelope that never varies. A client should be able to reason about a response from its status alone.</p>
+
+  <p class="comp-label reveal">status palette</p>
+  <div class="swatches reveal">
+    <div class="swatch" style="background:var(--c-sport)"><div class="cr">2xx</div><div><div class="nm">success</div><div class="hx">200 · 201 · 202 · 204</div></div></div>
+    <div class="swatch" style="background:var(--c-world)"><div class="cr">3xx</div><div><div class="nm">cache / redirect</div><div class="hx">301 · 304</div></div></div>
+    <div class="swatch" style="background:var(--state-warning)"><div class="cr">4xx</div><div><div class="nm">client error</div><div class="hx">400 · 401 · 403 · 404 · 409 · 422 · 429</div></div></div>
+    <div class="swatch" style="background:var(--c-politics)"><div class="cr">5xx</div><div><div class="nm">server error</div><div class="hx">500 · 502 · 503</div></div></div>
+  </div>
+
+  <p class="comp-label spaced reveal">the error envelope (RFC 9457 problem+json)</p>
+  <div class="codeblock reveal">422 Unprocessable Entity
+{
+  "type": "https://codex.dev/errors/validation_failed",
+  "title": "Validation failed",
+  "status": 422,
+  "code": "validation_failed",
+  "detail": "headline must be 1–280 characters",
+  "errors": [ { "field": "headline", "rule": "max_length" } ],
+  "trace_id": "tr_01J..."
+}</div>
+
+  <p class="comp-label spaced reveal">canonical errors — switch on <code>code</code>, not on prose</p>
+  <div class="spec-table cols-3 reveal">
+    <div class="st-row st-head"><span>code</span><span>http</span><span>when</span></div>
+    <div class="st-row"><span>unauthenticated</span><span>401</span><span>missing / invalid token</span></div>
+    <div class="st-row"><span>forbidden</span><span>403</span><span>authenticated, not allowed</span></div>
+    <div class="st-row"><span>not_found</span><span>404</span><span>resource absent (or hidden)</span></div>
+    <div class="st-row"><span>conflict</span><span>409</span><span>version / idempotency clash</span></div>
+    <div class="st-row"><span>validation_failed</span><span>422</span><span>well-formed but invalid</span></div>
+    <div class="st-row"><span>rate_limited</span><span>429</span><span>budget spent; Retry-After set</span></div>
+    <div class="st-row"><span>unavailable</span><span>503</span><span>shedding load; Retry-After set</span></div>
+  </div>
+  <p class="spec-note reveal">The <code>code</code> is part of the contract and never changes; the <code>title</code> and <code>detail</code> are for humans and may. Every error carries a <b>trace_id</b> that ties the client report to the server logs.</p>
+</section>
+
+<!-- 04 ARCHITECTURE -->
+<section class="block" id="architecture">
+  <div class="block-head reveal"><span class="idx">04</span><h2>architecture</h2><span class="tail"></span></div>
+  <p class="lede reveal">The bones: a thin <b>edge</b>, a handful of focused <b>services</b>, a small set of <b>data stores</b>, and an <b>event log</b> spanning them. Boring shapes, drawn clearly, so the system can be reasoned about on one screen.</p>
+
+  <p class="comp-label reveal">service topology</p>
+  <div class="arch reveal">
+    <div class="tier"><div class="tl">client</div><div class="row"><div class="node edge">web · mobile · third-party API consumers</div></div></div>
+    <div class="down">&darr;</div>
+    <div class="tier"><div class="tl">edge</div><div class="row"><div class="node edge"><b>gateway</b>tls, authn/z, rate-limit, response cache, routing, trace ids</div></div></div>
+    <div class="down">&darr;</div>
+    <div class="tier"><div class="tl">services</div><div class="row">
+      <div class="node svc"><b>identity</b>accounts, sessions, tokens</div>
+      <div class="node svc"><b>content</b>articles, posts, media refs</div>
+      <div class="node svc"><b>graph</b>follows, blocks, mutes</div>
+      <div class="node svc"><b>feed</b>timeline assembly</div>
+      <div class="node svc"><b>interactions</b>comments, reactions</div>
+      <div class="node svc"><b>notifications</b>fan-out &amp; delivery</div>
+      <div class="node svc"><b>search</b>full-text, trending</div>
+      <div class="node svc"><b>media</b>upload, transcode</div>
+    </div></div>
+    <div class="bus">&uarr;&darr; event log · append-only · one topic per domain &uarr;&darr;</div>
+    <div class="tier"><div class="tl">data</div><div class="row">
+      <div class="node data"><b>postgres</b>system of record</div>
+      <div class="node data"><b>redis</b>cache · timelines · counters · limits</div>
+      <div class="node data"><b>search index</b>full-text · trending</div>
+      <div class="node data"><b>object store + cdn</b>media</div>
+    </div></div>
+  </div>
+  <p class="spec-note reveal">Start as a <b>modular monolith</b> with these boundaries as modules; split a module into its own service only when its scaling or ownership genuinely diverges. The boundaries are real from day one; the process count is not.</p>
+
+  <p class="comp-label spaced reveal">request lifecycle</p>
+  <div class="flow reveal">
+    <div class="step"><span class="sn">01</span><b>edge</b><span>terminate tls, route, attach trace id</span></div>
+    <div class="step"><span class="sn">02</span><b>authn / z</b><span>verify token, resolve scopes</span></div>
+    <div class="step"><span class="sn">03</span><b>rate limit</b><span>token bucket per key</span></div>
+    <div class="step"><span class="sn">04</span><b>cache</b><span>ETag match &rarr; 304, done</span></div>
+    <div class="step"><span class="sn">05</span><b>handler</b><span>validate, read/write, emit event</span></div>
+    <div class="step"><span class="sn">06</span><b>respond</b><span>typed envelope + cache headers</span></div>
+  </div>
+
+  <p class="comp-label spaced reveal">data stores — each with one job</p>
+  <div class="spec-table cols-3 reveal">
+    <div class="st-row st-head"><span>store</span><span>role</span><span>why</span></div>
+    <div class="st-row"><span>postgres</span><span>system of record</span><span>relational truth, transactions, constraints</span></div>
+    <div class="st-row"><span>redis</span><span>cache · timelines · counters · limits</span><span>sub-ms reads, ephemeral by design</span></div>
+    <div class="st-row"><span>search index</span><span>full-text &amp; trending</span><span>queries Postgres can't serve cheaply</span></div>
+    <div class="st-row"><span>object store + cdn</span><span>media bytes</span><span>cheap, durable, edge-delivered</span></div>
+    <div class="st-row"><span>event log</span><span>fan-out &amp; audit</span><span>the one source of truth for change</span></div>
+  </div>
+</section>
+
+<!-- 05 PUBLISHING -->
+<section class="block" id="publishing">
+  <div class="block-head reveal"><span class="idx">05</span><h2>the publishing pipeline</h2><span class="tail"></span></div>
+  <p class="lede reveal">How a story goes from a draft to a million feeds. The <b>write path is short and synchronous</b> — validate, persist, emit — and everything expensive happens <b>off the event</b>, so publishing never waits on fan-out.</p>
+
+  <p class="comp-label reveal">the write path — synchronous, fast</p>
+  <div class="flow reveal">
+    <div class="step"><span class="sn">01</span><b>validate</b><span>schema, length, ownership</span></div>
+    <div class="step"><span class="sn">02</span><b>persist</b><span>insert into postgres, status = draft/live</span></div>
+    <div class="step"><span class="sn">03</span><b>emit</b><span>publish <code>content.published</code> to the log</span></div>
+    <div class="step"><span class="sn">04</span><b>respond</b><span>201 + the created resource</span></div>
+  </div>
+
+  <p class="comp-label spaced reveal">off the event — async, parallel, retryable</p>
+  <div class="arch reveal">
+    <div class="tier"><div class="tl">consumers of content.published</div><div class="row">
+      <div class="node async"><b>moderation</b>scan, score, hold or clear</div>
+      <div class="node async"><b>indexing</b>write to the search index</div>
+      <div class="node async"><b>media</b>transcode, generate variants</div>
+      <div class="node async"><b>fan-out</b>push into follower timelines</div>
+      <div class="node async"><b>notifications</b>alert followers &amp; mentions</div>
+    </div></div>
+  </div>
+  <p class="spec-note reveal">Each consumer is <b>independent and idempotent</b> — replaying the same event twice is harmless. A slow transcoder can never block indexing, and a failed notification never un-publishes the article. Ordering is guaranteed per resource, not globally.</p>
+</section>
+
+<!-- 06 GRAPH & FEED -->
+<section class="block" id="feed">
+  <div class="block-head reveal"><span class="idx">06</span><h2>graph &amp; feed</h2><span class="tail"></span></div>
+  <p class="lede reveal">The social half. Follows are edges; the timeline is the hardest read in the product. The engine uses the canonical answer: <b>fan-out-on-write for the many, fan-out-on-read for the few</b> — because the celebrity problem is a different problem.</p>
+
+  <p class="comp-label reveal">feed generation — a hybrid by follower count</p>
+  <div class="arch reveal">
+    <div class="tier"><div class="tl">on write — normal accounts</div><div class="row">
+      <div class="node svc">new post &rarr; event</div>
+      <div class="node async">fan-out worker</div>
+      <div class="node data">prepend id into each follower's redis timeline</div>
+    </div></div>
+    <div class="tier"><div class="tl">on read — high-follower accounts (above a threshold)</div><div class="row">
+      <div class="node svc">reader requests feed</div>
+      <div class="node async">merge stored timeline + pull recent from followed celebrities</div>
+      <div class="node data">redis + postgres</div>
+    </div></div>
+  </div>
+  <p class="spec-note reveal">Writing a celebrity's post into 50M timelines is wasteful; their followers <b>pull at read time</b> instead and merge. Everyone else is fanned out on write so their feed is a single Redis range read. The threshold is a <a style="color:var(--zune)">token</a>, tuned, not guessed.</p>
+
+  <p class="comp-label spaced reveal">interactions</p>
+  <div class="spec-table cols-3 reveal">
+    <div class="st-row st-head"><span>thing</span><span>store</span><span>shape</span></div>
+    <div class="st-row"><span>follows</span><span>postgres edges + redis counts</span><span>(follower, followee, created_at)</span></div>
+    <div class="st-row"><span>comments</span><span>postgres, materialized path</span><span>threaded, depth-capped, collapsible</span></div>
+    <div class="st-row"><span>reactions</span><span>redis counters, postgres durable</span><span>eventually-consistent counts</span></div>
+    <div class="st-row"><span>trending</span><span>search / analytics tier</span><span>windowed counts, decayed</span></div>
+  </div>
+  <p class="spec-note reveal">Counters live hot in Redis and are reconciled against Postgres on a schedule — the like count can lag by a second, and that is a deliberate trade, not a bug. Comment threads cap their depth and collapse, exactly like the front-end's thread component.</p>
+</section>
+
+<!-- 07 EVENTS & REALTIME -->
+<section class="block" id="events">
+  <div class="block-head reveal"><span class="idx">07</span><h2>events &amp; realtime</h2><span class="tail"></span></div>
+  <p class="lede reveal">This is the engine in <b>motion</b>. The append-only log is the spine of everything asynchronous — fan-out, indexing, notifications, webhooks — and it is also how the product reaches the client in real time, without anyone polling.</p>
+
+  <p class="comp-label reveal">delivery guarantees</p>
+  <div class="spec-table cols-2 reveal">
+    <div class="st-row st-head"><span>property</span><span>rule</span></div>
+    <div class="st-row"><span>delivery</span><span>at-least-once — consumers must be idempotent</span></div>
+    <div class="st-row"><span>ordering</span><span>per partition key (per resource), not global</span></div>
+    <div class="st-row"><span>identity</span><span>every event carries a ULID + trace id</span></div>
+    <div class="st-row"><span>retries</span><span>exponential backoff + jitter, capped</span></div>
+    <div class="st-row"><span>poison</span><span>dead-letter after N attempts, alert</span></div>
+    <div class="st-row"><span>realtime</span><span>ws/sse gateway tails the log, pushes to clients</span></div>
+  </div>
+  <p class="spec-note reveal">Workers consume topics — moderation, indexing, fan-out, notifications, webhooks — and a WebSocket gateway subscribes to the same log to push live notifications, feed updates and trending. One log, many readers; no consumer can slow another.</p>
+
+  <div class="rm-note reveal">
+    <div class="t">backpressure — the engine yields gracefully</div>
+    <p>Just as the front-end honours <code>prefers-reduced-motion</code>, the back-end honours load. When a queue depth or latency budget is breached, the edge <b>sheds</b> — non-critical work degrades first (delayed fan-out, deferred indexing), reads stay up, and clients get a typed <code>503</code> with <code>Retry-After</code> rather than a hang. Degrade, never collapse.</p>
+  </div>
+</section>
+
+<!-- 08 DO / DON'T -->
+<section class="block">
+  <div class="block-head reveal"><span class="idx">08</span><h2>do · don't</h2><span class="tail"></span></div>
+  <div class="ddgrid reveal">
+    <div class="dd do">
+      <div class="tag"><span></span>do</div>
+      <ul>
+        <li>Design the <b>contract first</b>; implement behind it.</li>
+        <li><b>Cursor-paginate</b> everything; keep cursors opaque.</li>
+        <li>Take an <b>Idempotency-Key</b> on every write.</li>
+        <li>Return <b>typed errors</b> with a stable code and trace id.</li>
+        <li><b>Emit an event</b> on every state change.</li>
+        <li>Do expensive work <b>off the event</b>, idempotently.</li>
+        <li>Enforce <b>budgets</b> (latency, payload, rate) at the edge.</li>
+        <li>Use <b>sortable opaque IDs</b> (ULID) and UTC timestamps.</li>
+      </ul>
+    </div>
+    <div class="dd dont">
+      <div class="tag"><span></span>don't</div>
+      <ul>
+        <li>Offset-paginate at scale, or expose row counts as IDs.</li>
+        <li>Return <b>bare 500s</b> or leak stack traces and DB errors.</li>
+        <li><b>Fan-out-on-write</b> to a celebrity's millions of followers.</li>
+        <li>Make <b>synchronous cross-service calls</b> for non-critical work.</li>
+        <li>Run <b>unbounded queries</b> with no limit or timeout.</li>
+        <li>Ship <b>breaking changes</b> without a new version.</li>
+        <li><b>Trust client timestamps</b> or client-supplied IDs blindly.</li>
+        <li>Let a slow consumer <b>block</b> the write path.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 09 TOKENS -->
+<section class="block" id="tokens">
+  <div class="block-head reveal"><span class="idx">09</span><h2>tokens</h2><span class="tail"></span></div>
+  <p class="lede reveal">The engine has tokens too — not color and space, but <b>budgets, limits and TTLs</b>. Named, versioned, and enforced in code, so "fast" and "fair" mean specific numbers rather than good intentions. They ship as <code>codex-backend-tokens.json</code>.</p>
+
+  <p class="comp-label reveal">latency &amp; availability budgets (SLO)</p>
+  <div class="spec-table cols-3 reveal">
+    <div class="st-row st-head"><span>surface</span><span>p99</span><span>target</span></div>
+    <div class="st-row"><span>read (cached)</span><span>&lt; 150ms</span><span>availability 99.9%</span></div>
+    <div class="st-row"><span>read (uncached)</span><span>&lt; 300ms</span><span>error budget 0.1%</span></div>
+    <div class="st-row"><span>write</span><span>&lt; 400ms</span><span>idempotent, durable</span></div>
+    <div class="st-row"><span>feed assembly</span><span>&lt; 150ms</span><span>single redis range read</span></div>
+  </div>
+
+  <p class="comp-label spaced reveal">limits &amp; timeouts</p>
+  <div class="tokens reveal">
+    <div class="token"><div class="label">pagination</div><div class="val">default 20 · max 100</div><div class="val">cursor opaque</div><div class="desc">Every list. No exceptions, no offset.</div><button class="copy" data-copy="page.default=20; page.max=100; pagination=cursor;">copy</button></div>
+    <div class="token"><div class="label">rate limits</div><div class="val">anon 60/min</div><div class="val">authed 600/min · write 60/min</div><div class="desc">Token bucket per key; 429 + Retry-After.</div><button class="copy" data-copy="rate.anon=60/min; rate.authed=600/min; rate.write=60/min;">copy</button></div>
+    <div class="token"><div class="label">timeouts</div><div class="val">client 5s</div><div class="val">inter-service 1s · db query 500ms</div><div class="desc">Nothing waits forever; everything has a ceiling.</div><button class="copy" data-copy="timeout.client=5s; timeout.svc=1s; timeout.db=500ms;">copy</button></div>
+    <div class="token"><div class="label">cache TTL</div><div class="val">article 60s · feed 10s</div><div class="val">profile 30s · counters 5s</div><div class="desc">Edge + Redis. Staleness is bounded and chosen.</div><button class="copy" data-copy="ttl.article=60s; ttl.feed=10s; ttl.profile=30s; ttl.counters=5s;">copy</button></div>
+    <div class="token"><div class="label">retries</div><div class="val">3 attempts · base 100ms</div><div class="val">exp backoff + jitter · DLQ after 5</div><div class="desc">For async consumers and inter-service calls.</div><button class="copy" data-copy="retry.attempts=3; retry.base=100ms; retry.backoff=exp+jitter; retry.dlq=5;">copy</button></div>
+    <div class="token"><div class="label">fan-out threshold</div><div class="val">&le; 50k followers &rarr; on write</div><div class="val">&gt; 50k &rarr; on read</div><div class="desc">The line between push and pull feeds.</div><button class="copy" data-copy="feed.fanout_threshold=50000;">copy</button></div>
+    <div class="token"><div class="label">retention</div><div class="val">events 30d · audit 1y</div><div class="val">media indefinite</div><div class="desc">How long the log and trails are kept.</div><button class="copy" data-copy="retain.events=30d; retain.audit=1y; retain.media=inf;">copy</button></div>
+    <div class="token"><div class="label">payload</div><div class="val">request &le; 1MB</div><div class="val">media &le; 50MB · headline &le; 280</div><div class="desc">Bounded at the edge before a handler runs.</div><button class="copy" data-copy="payload.request=1MB; payload.media=50MB; field.headline=280;">copy</button></div>
+  </div>
+  <p class="spec-note reveal">These are the engine's counterpart to the front-end's color and space tokens: a single, named source of truth, referenced everywhere, changed in one place.</p>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="big reveal">contract <em>over</em> code.</div>
+  <div class="row reveal">
+    <span>the codex · engine — backend manifesto</span>
+    <span>one grammar · typed errors · event-sourced</span>
+    <span>predictable before clever</span>
+  </div>
+</footer>
+
+<script>
+const store = { get(k){ try{ return localStorage.getItem(k);}catch(e){return null;} }, set(k,v){ try{ localStorage.setItem(k,v);}catch(e){} } };
+const io = new IntersectionObserver((es)=>{ es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} }); },{threshold:.12});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+const navToggle = document.getElementById('navToggle');
+const mainNav = document.getElementById('mainNav');
+if(navToggle && mainNav){
+  navToggle.addEventListener('click',()=>{ const o=mainNav.classList.toggle('open'); navToggle.textContent=o?'close':'menu'; });
+  mainNav.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{ mainNav.classList.remove('open'); navToggle.textContent='menu'; }));
+}
+
+document.querySelectorAll('.copy').forEach(btn=>{
+  btn.addEventListener('click',async()=>{
+    try{ await navigator.clipboard.writeText(btn.dataset.copy); const t=btn.textContent; btn.textContent='copied'; setTimeout(()=>btn.textContent=t,1200);}catch(e){}
+  });
+});
+</script>
+</body>
+</html>

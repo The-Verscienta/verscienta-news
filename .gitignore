@@ -22,3 +22,6 @@ erl_crash.dump
 
 # Services data (use volumes)
 pg_data/
+
+# macOS
+.DS_Store

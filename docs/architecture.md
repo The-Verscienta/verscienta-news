@@ -1,43 +1,48 @@
-# Architecture
+# Architecture — Verscienta News on KilnCMS v1.0.0
 
-## Overview
-
-Verscienta News layers on KilnCMS v1.0.0 (submodule `kiln_cms/`, overlay `projects/verscienta_news/`). Kiln owns publishing (blocks, workflow, versioning, firing, headless APIs, search). Overlay adds wellness catalog + middleware services (ingestion, AI, social, gamification).
+Slice 1 scope is `docs/slice-1.md`. The public page is the fired Kiln alias `/[field:category]/[slug]`.
 
 ```
-Browser (SvelteKit :5173) ── fetch/Channels ──► KilnCMS :4000 ── fired artifacts /api/* ──┐
-                                    └─ Meilisearch :7700 ◄── Oban indexing ───────────────┤
-Frontend proxy /api + /socket ──► Phoenix ──► Ash domains (Catalog, Social, Gamification) ─► Postgres :5432
-Broadway (RSS/APIs/HTML) ──► NormalizedArticle ──► Ollama Llama :11434 (summarize/tag/quality) ─► Kiln Post draft
-Phoenix Channels + LiveKit SFU ──► Rooms/Presence
+Oban cron (15m, Allowlist) ── Req ──► Poller.apply_license (truncate before store) ──► Article in_review
+Ollama :11434 (Compose profile ml, advisory) ──► summary / flag only; outage leaves the draft in_review
+/editor?status=in_review ── checklist ──► published ──► fired /[field:category]/[slug]
 ```
 
-## Backend (Kiln)
+Kiln owns content workflow (`draft`, `in_review`, `published`, `archived`), firing, headless read APIs, Postgres full-text search, newsletter, billing, notifications, and outbound `KilnCMS.Social` (Bluesky and Mastodon on publish). That module is not a follow graph.
 
-- **Content**: `VerscientaNews.Catalog.Article` (`type: :article`, alias `/[field:category]/[slug]`, excerpt, SEO patterns). Embedded blocks (Portable Text canonical via D12) — see `blocks/wellness_callout.ex`.
-- **Activation**: `config/project.exs` restates core `ash_domains`/`content_domains` + adds `VerscientaNews.Catalog`; `Kiln.Plugin` declares domains/blocks (verified by `mix kiln.plugins.doctor`).
-- **Delivery**: fired artifacts (`web`/`json`/`json_ld`) via `PublishedArtifact` + Cachex; headless at `/api/content/article/:slug`, `/api/search`, `/api/json`, `/gql`.
+The overlay adds the `Article` type, the `WellnessCallout` block, `VerscientaNews.Ingestion.Allowlist`, and the poller. Follow graph and gamification stay out of `ash_domains` until after Slice 1.
 
-## Middleware (same OTP release)
+## Delivery
 
-| Concern | Module | Impl |
+One public path. Kiln fires `/[field:category]/[slug]` from `alias_pattern` on `VerscientaNews.Catalog.Article`. Headless JSON for that same article is `/api/content/article/:slug?format=json`. Slice 1 does not require a Svelte route to match the fired body. Routes under `frontend/` are not the Slice 1 reader.
+
+Authoring is Kiln `/editor`. Review is `/editor?status=in_review`.
+
+## Modules
+
+| Concern | Module | Slice 1 |
 |---|---|---|
-| Ingestion | `VerscientaNews.Ingestion.Pipeline` | Broadway pipeline per source (RSS `ElixirFeedParser`, HTML `Floki`, API `Req`), batchers dedupe by URL hash, Oban cron 15m |
-| Normalization | `VerscientaNews.Ingestion.Normalize` | HTML → TipTap JSON → Portable Text; extract cover, tags, category guess |
-| AI | `VerscientaNews.AI.Llama` | Req client to Ollama `http://ollama:11434/api/generate`; prompts for summary (2–3 sentences), tags (fixed taxonomy), quality_score 0–100, toxicity/claim flag |
-| Recommendations | `VerscientaNews.Recommendation` | RRF fusion: Meilisearch keyword + pgvector block embeddings (Kiln D16) + collaborative signals; `Recommendation` Ash resource |
-| Gamification | `VerscientaNews.Gamification` | Vitality ledger, badges, quests, leaderboard matviews |
-| Social | `VerscientaNews.Social` | Follows, comments (closure), reactions, reposts, communities, activity feed fanout via PubSub |
+| Allowlist | `VerscientaNews.Ingestion.Allowlist` | Registry the poller reads |
+| Poll | `VerscientaNews.Ingestion.Poller` | Oban + Req. `apply_license/1` before storage. State `in_review` |
+| AI | `VerscientaNews.AI.Llama` | Advisory. Does not publish |
+| Search | `KilnCMS.Search` | Postgres full text |
+| Newsletter, billing | `KilnCMS.Newsletter`, `KilnCMS.Billing` | Present in Kiln. Not a Slice 1 exit |
+| Follow graph | `VerscientaNews.FollowGraph` | After Slice 1. Not named `Social` |
+| Gamification | `VerscientaNews.Gamification` | After Slice 1, and only with non-dwell metrics |
+| Live rooms | Phoenix Channel, LiveKit | Off |
 
-## Frontend (SvelteKit)
+Realtime is `Phoenix.PubSub`. Cache and rate limit are Cachex and Hammer. Dragonfly waits on a multi-node measurement. There is no Redis.
 
-- Routes: `/` (For You / Following tabs), `/article/[slug]`, `/category/[cat]`, `/search`, `/write` (TipTap), `/c/[handle]`, `/room/[id]`.
-- State: Svelte stores + Phoenix Channels (`src/lib/api/realtime.ts`); Meilisearch `instant-meilisearch`.
-- Tokens: `src/lib/tokens/codex.css` (`--color-primary` ember #c45a1a, secondary herbal #2f6b4a, accent gold #8b6b3a). Codex-gated — replace with `the-codex-v6.html` values when readable.
+## Auth
 
-## Decisions carried from plan
+AshAuthentication. Svelte sessions are unspecified because Slice 1 has no Svelte writes.
 
-- BFF stays Elixir (one BEAM) — Node/Go rejected for auth/policy duplication.
-- SvelteKit over Next.js — smaller bundle for long-form reading; Next.js remains fallback if hiring favors React.
-- Dragonfly deferred (D2) — Cachex/Hammer + Postgres (Oban) until multi-node measured.
-- LiveKit additive behind `livekit_enabled`.
+## Stack
+
+| Layer | Choice |
+|---|---|
+| Backend | `kiln_cms` v1.0.0 submodule, overlay `projects/verscienta_news/` |
+| Poll | Oban, Req, Floki, ElixirFeedParser. Ollama optional, profile `ml` |
+| Search | Kiln Postgres full text |
+| Database | Postgres 16 with the `vector` extension, because Kiln's repo registers that type. Semantic search stays off |
+| Reader | Fired Kiln page |

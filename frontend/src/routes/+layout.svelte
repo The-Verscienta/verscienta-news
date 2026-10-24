@@ -12,7 +12,7 @@
     </nav>
     <div class="flex items-center gap-2">
       <a href="/search" class="field-input w-32 sm:w-48" aria-label="Search">Search…</a>
-      <a href="/write" class="btn btn-primary text-sm">Write</a>
+      <a href="http://localhost:4000/editor" class="btn btn-primary text-sm">Write in Kiln</a>
     </div>
   </div>
 </header>

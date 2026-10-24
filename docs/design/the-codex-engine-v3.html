@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>the codex · engine — liveview · ash · oban · pubsub (grounded)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,100..1000&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0c0c0c;
+  --bg-2:#161616;
+  --bg-3:#1f1f1f;
+  --ink:#ffffff;
+  --ink-2:#c2c2c2;
+  --ink-3:#9a9a9a;
+  --line:#2a2a2a;
+  --line-2:#383838;
+
+  --zune:#f2660a;
+  --zune-bright:#ff8636;
+  --zune-deep:#c9540a;
+  --zune-08:rgba(242,102,10,.08);
+  --zune-16:rgba(242,102,10,.16);
+  --zune-28:rgba(242,102,10,.28);   /* increased from .22 for better resting affordance */
+  --zune-32:rgba(242,102,10,.34);
+
+  --c-world:#1ba1e2;
+  --c-politics:#ff311d;
+  --c-tech:#00aba9;
+  --c-culture:#ff0d8e;
+  --c-sport:#8cbf26;
+  --c-money:#718d68;
+  --c-violet:#be4eff;
+
+  --gut: clamp(20px, 5vw, 80px);
+
+  --ease: cubic-bezier(.2, .88, .2, 1);
+  --dur-fast: 160ms;
+  --dur-base: 260ms;
+  --dur-slow: 380ms;
+
+  --w-display: 250;
+  --w-page: 300;
+  --w-head: 360;
+  --w-body: 360;
+  --w-strong: 560;
+  --w-label: 640;
+
+  /* spacing scale — 4px base */
+  --space-3xs:4px; --space-2xs:8px; --space-xs:12px; --space-sm:16px;
+  --space-md:24px; --space-lg:32px; --space-xl:48px; --space-2xl:64px;
+  --space-3xl:96px; --space-4xl:128px;
+
+  /* grid + breakpoints */
+  --grid-cols:12; --grid-gutter:24px; --grid-max:1280px;
+  --bp-narrow:600px; --bp-wide:960px; --bp-ultra:1440px;
+
+  /* semantic accent states — the ramp, named by job */
+  --accent-wash:var(--zune-08);
+  --accent-rest:var(--zune-28);
+  --accent:var(--zune);
+  --accent-hover:var(--zune-bright);
+  --accent-pressed:var(--zune-deep);
+  --focus-ring:var(--zune);
+  --focus-offset:3px;
+
+  /* status + disabled */
+  --state-error:#ff311d;
+  --state-success:#8cbf26;
+  --state-warning:#e0a93b;
+  --state-info:#1ba1e2;
+  --disabled-bg:#1a1a1a;
+  --disabled-ink:#5a5a5a;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Roboto Flex', system-ui, sans-serif;
+  font-optical-sizing:auto;
+  font-variation-settings:'wght' var(--w-body);
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+::selection{background:var(--zune);color:#000}
+
+:focus-visible{outline:2px solid var(--zune); outline-offset:3px}
+:focus:not(:focus-visible){outline:none}
+
+/* ===== shared ===== */
+.kicker{font-size:11px; font-variation-settings:'wght' var(--w-label); letter-spacing:.32em; text-transform:uppercase; color:var(--ink-3);}
+.giant{font-variation-settings:'wght' var(--w-display); line-height:.86; letter-spacing:-.02em; text-transform:lowercase; color:var(--ink);}
+a{color:inherit;text-decoration:none}
+
+/* Top strip */
+.strip{position:fixed; top:0; left:0; right:0; z-index:50; display:flex; align-items:center; gap:28px; padding:14px var(--gut); background:linear-gradient(#0c0c0c, #0c0c0ccc 70%, transparent); backdrop-filter:saturate(1.2);}
+.strip .mark{font-size:13px; font-variation-settings:'wght' 800; letter-spacing:.05em; text-transform:lowercase}
+.strip .mark b{color:var(--zune)}
+.strip .mark .v{color:var(--ink-3); font-variation-settings:'wght' 600; font-size:11px}
+.strip nav{display:flex; gap:22px; font-size:12px; font-variation-settings:'wght' 500; letter-spacing:.08em; text-transform:lowercase; color:var(--ink-3); margin-left:auto}
+.strip nav a{transition:color .2s; padding:2px 0}
+.strip nav a:hover, .strip nav a:focus-visible{color:var(--ink)}
+.strip .nav-toggle{display:none; background:none; border:1px solid var(--line-2); color:var(--ink-2); padding:8px 18px; font-size:11px; letter-spacing:.12em; text-transform:uppercase; cursor:pointer; transition:all .2s}
+.strip .nav-toggle:hover, .strip .nav-toggle:focus-visible{border-color:var(--zune); color:var(--ink)}
+
+@media(max-width:760px){
+  .strip nav{display:none; position:absolute; top:100%; left:0; right:0; background:#0c0c0c; padding:22px var(--gut); flex-direction:column; gap:18px; border-top:1px solid var(--line); z-index:60}
+  .strip nav.open{display:flex}
+  .strip .nav-toggle{display:block}
+}
+
+/* Hero */
+.pano{position:relative; min-height:100vh; padding:0 var(--gut); display:flex; flex-direction:column; justify-content:flex-end; padding-bottom:7vh; overflow:hidden}
+.pano .deco{position:absolute; top:0; right:-6vw; width:46vw; height:100%; background:var(--zune); opacity:.07; transform:skewX(-9deg); pointer-events:none}
+.pano .pano-title{font-size:clamp(80px, 25vw, 400px); white-space:nowrap; margin-bottom:-.04em; margin-right:calc(-1 * var(--gut) - 8vw)}
+.pano .pano-title em{font-style:normal; color:var(--zune)}
+.pano .sub{max-width:660px; margin-top:28px; font-size:clamp(16px,2vw,20px); font-variation-settings:'wght' var(--w-body); color:var(--ink-2)}
+.pano .sub em{color:var(--zune); font-style:normal; font-variation-settings:'wght' 500}
+.pano .meta{margin-top:36px; display:flex; gap:26px; flex-wrap:wrap}
+.pano .meta div .n{font-size:32px; font-variation-settings:'wght' var(--w-display); color:var(--zune)}
+.pano .meta div .l{font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-3)}
+.scrollhint{position:absolute; bottom:26px; right:var(--gut); font-size:11px; letter-spacing:.3em; text-transform:uppercase; color:var(--ink-3); animation:pulse 2.4s infinite}
+@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
+
+/* Changelog — dismissible */
+.changelog{margin:0 var(--gut); padding:26px 30px; border:1px solid var(--line); border-left:3px solid var(--zune); background:var(--zune-08); display:grid; gap:18px; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); position:relative}
+.changelog .close{position:absolute; top:14px; right:14px; background:none; border:none; color:var(--ink-3); font-size:18px; line-height:1; cursor:pointer; padding:4px; opacity:.7}
+.changelog .close:hover{opacity:1; color:var(--zune)}
+.changelog .cl-head{grid-column:1/-1; display:flex; align-items:baseline; gap:14px}
+.changelog .cl-head .t{font-size:14px; letter-spacing:.22em; text-transform:uppercase; font-variation-settings:'wght' var(--w-label); color:var(--zune)}
+.changelog .cl-head .s{font-size:13px; color:var(--ink-3)}
+.changelog .ci .n{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-3); font-variation-settings:'wght' 600; margin-bottom:6px}
+.changelog .ci .d{font-size:14px; color:var(--ink-2); line-height:1.5}
+.changelog .ci b{color:var(--ink); font-variation-settings:'wght' 520}
+
+/* Section shell */
+section.block{padding:clamp(70px,12vh,140px) var(--gut); position:relative}
+.block-head{display:flex; align-items:flex-end; gap:24px; margin-bottom:46px}
+.block-head .idx{font-size:13px; font-variation-settings:'wght' 800; color:var(--zune); letter-spacing:.1em; padding-bottom:.6em}
+.block-head h2{font-size:clamp(40px,8vw,104px); font-variation-settings:'wght' var(--w-display); line-height:.85; text-transform:lowercase; letter-spacing:-.02em}
+.block-head .tail{flex:1; height:1px; background:var(--line); margin-bottom:1em; min-width:20px}
+.lede{max-width:700px; font-size:clamp(16px,2vw,19px); color:var(--ink-2); margin-bottom:56px; font-variation-settings:'wght' var(--w-body)}
+.lede b{color:var(--ink); font-variation-settings:'wght' var(--w-strong)}
+.comp-label{font-size:11px; letter-spacing:.22em; text-transform:uppercase; color:var(--ink-3); margin:0 0 14px}
+.comp-label.spaced{margin-top:60px}
+
+/* Principles */
+.principles{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line)}
+.principle{background:var(--bg); padding:38px 32px; transition:background var(--dur-base) var(--ease)}
+.principle:hover{background:var(--bg-2)}
+.principle .pn{font-size:13px; font-variation-settings:'wght' 800; color:var(--zune); letter-spacing:.1em}
+.principle h3{font-size:25px; font-variation-settings:'wght' var(--w-page); text-transform:lowercase; margin:16px 0 12px; line-height:1.12}
+.principle p{font-size:14px; color:var(--ink-2); line-height:1.65}
+.principle p .new-tag{display:inline-block; margin-top:8px; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--zune); font-variation-settings:'wght' 640}
+
+/* Typography */
+.typescale{border-top:1px solid var(--line)}
+.typerow{display:grid; grid-template-columns:150px 1fr; gap:30px; align-items:baseline; padding:26px 0; border-bottom:1px solid var(--line)}
+.typerow .spec{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-3); line-height:1.7}
+.typerow .spec b{display:block; color:var(--ink-2); font-variation-settings:'wght' 640}
+.typerow .sample{overflow:hidden; color:var(--ink)}
+.s-display,.s-page,.s-head{text-transform:lowercase; white-space:nowrap; text-overflow:clip}
+.s-display{font-size:clamp(48px,11vw,124px); font-variation-settings:'wght' var(--w-display); line-height:.9; letter-spacing:-.02em}
+.s-page{font-size:clamp(38px,7vw,72px); font-variation-settings:'wght' var(--w-page); line-height:.95}
+.s-head{font-size:clamp(28px,4vw,44px); font-variation-settings:'wght' var(--w-head)}
+.s-title{font-size:23px; font-variation-settings:'wght' var(--w-strong); text-transform:none}
+.s-body{font-size:16px; font-variation-settings:'wght' var(--w-body); text-transform:none; white-space:normal; color:var(--ink-2); max-width:560px}
+.s-cap{font-size:11px; font-variation-settings:'wght' var(--w-label); letter-spacing:.22em; text-transform:uppercase; color:var(--ink-3)}
+
+.vf-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); margin-top:48px}
+.vf-card{background:var(--bg); padding:30px 30px 34px}
+.vf-card h4{font-size:15px; letter-spacing:.16em; text-transform:uppercase; color:var(--zune); font-variation-settings:'wght' 640; margin-bottom:8px}
+.vf-card p{font-size:14px; color:var(--ink-2); line-height:1.6; margin-bottom:20px}
+.vf-weight{font-size:clamp(40px,8vw,76px); line-height:.92; text-transform:lowercase; color:var(--ink); font-variation-settings:'wght' 250; transition:font-variation-settings var(--dur-slow) var(--ease)}
+.vf-card:hover .vf-weight, .vf-card:focus-within .vf-weight{font-variation-settings:'wght' 560}
+.vf-hint{margin-top:14px; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3)}
+.vf-range{width:100%; margin-top:18px; accent-color:var(--zune)}
+.vf-opsz-row{display:flex; align-items:baseline; gap:22px; flex-wrap:wrap}
+.vf-opsz-row .big{font-size:64px; font-variation-settings:'wght' 300; text-transform:lowercase; line-height:1}
+.vf-opsz-row .small{font-size:13px; font-variation-settings:'wght' 360; color:var(--ink-2); max-width:200px; line-height:1.5}
+
+.bleed-note{margin-top:46px; display:flex; gap:14px; align-items:center; color:var(--ink-3); font-size:13px}
+.bleed-note .swoosh{width:46px; height:46px; border:1px solid var(--zune); position:relative; flex:none}
+.bleed-note .swoosh::after{content:"Aa"; position:absolute; left:8px; top:0; font-size:40px; font-variation-settings:'wght' 250; color:var(--zune)}
+.bleed-note b{color:var(--ink)}
+
+/* Color + Ramp */
+.canvasrow{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line); border:1px solid var(--line); margin-bottom:46px}
+@media(max-width:620px){.canvasrow{grid-template-columns:1fr}}
+.canvasrow>div{padding:50px 32px}
+.canvasrow .dark{background:#0c0c0c}
+.canvasrow .lite{background:#f4f4f4; color:#111}
+.canvasrow h4{font-variation-settings:'wght' var(--w-display); font-size:32px; text-transform:lowercase; margin-bottom:8px}
+.canvasrow .accent{color:var(--zune); font-variation-settings:'wght' 600}
+.canvasrow .lite .accent{color:var(--zune-deep)}
+.canvasrow small{font-size:12px; letter-spacing:.1em; text-transform:uppercase; opacity:.55}
+
+.ramp{display:flex; border:1px solid var(--line); margin:0 0 54px; overflow:hidden}
+.ramp div{flex:1; height:84px; display:flex; align-items:flex-end; padding:8px 10px; font-size:10px; letter-spacing:.08em; text-transform:uppercase; font-variation-settings:'wght' 640}
+.ramp .r1{background:var(--zune-08); color:var(--ink-3)}
+.ramp .r2{background:var(--zune-16); color:var(--ink-2)}
+.ramp .r3{background:var(--zune-28); color:var(--ink)}
+.ramp .r4{background:var(--zune); color:#000}
+.ramp .r5{background:var(--zune-bright); color:#000}
+.ramp .r6{background:var(--zune-deep); color:#000}
+
+.swatches{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; margin-bottom:30px}
+.swatch{height:124px; position:relative; padding:14px; display:flex; flex-direction:column; justify-content:space-between; cursor:default; transition:transform var(--dur-base) var(--ease)}
+.swatch:hover{transform:translateY(-6px)}
+.swatch .cr{font-size:10px; letter-spacing:.06em; color:#000c; font-variation-settings:'wght' 700; align-self:flex-end}
+.swatch .nm{font-size:13px; font-variation-settings:'wght' 600; text-transform:lowercase; color:#000}
+.swatch .hx{font-size:10px; letter-spacing:.1em; color:#0009; font-variation-settings:'wght' 600}
+.swatch.darktxt .nm{color:#fff}.swatch.darktxt .hx{color:#fff9}.swatch.darktxt .cr{color:#fffc}
+.contrast-note{font-size:13px; color:var(--ink-3); margin-bottom:54px; line-height:1.6; max-width:640px}
+.contrast-note b{color:var(--ink-2)}
+
+/* Tokens with copy buttons */
+.tokens{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line)}
+.token{background:var(--bg); padding:24px 26px; position:relative}
+.token .label{font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink-3); margin-bottom:8px}
+.token .val{font-family:ui-monospace, monospace; font-size:14px; color:var(--ink-2); line-height:1.7}
+.token .desc{font-size:13px; color:var(--ink-3); margin-top:10px; line-height:1.5}
+.token .copy{position:absolute; top:18px; right:18px; background:none; border:1px solid var(--line-2); color:var(--ink-3); font-size:10px; padding:2px 8px; cursor:pointer; border-radius:2px; transition:all .2s}
+.token .copy:hover{border-color:var(--zune); color:var(--zune)}
+
+/* Tonal ramp usage examples (NEW) */
+.ramp-examples{display:flex; flex-wrap:wrap; gap:16px; margin:30px 0 50px}
+.ramp-examples .ex{display:flex; flex-direction:column; gap:6px}
+.ramp-examples button{font-family:inherit; font-size:13px; padding:10px 20px; border:none; cursor:pointer; transition:all var(--dur-fast) var(--ease); font-variation-settings:'wght' 600}
+.ramp-examples .resting{background:var(--zune-16); color:var(--ink)}
+.ramp-examples .hover{background:var(--zune); color:#000}
+.ramp-examples .active{background:var(--zune-bright); color:#000; transform:scale(.98)}
+.ramp-examples .label{font-size:11px; color:var(--ink-3); letter-spacing:.1em}
+
+/* Layout */
+.demo-wrap{border:1px solid var(--line); background:#0a0a0a; position:relative; overflow:hidden}
+.demo-tag{position:absolute; top:14px; left:16px; z-index:5; font-size:10px; letter-spacing:.25em; text-transform:uppercase; color:var(--ink-3); background:#0a0a0acc; padding:4px 8px}
+
+.pano-shell{position:relative}
+.panodemo{position:relative; height:440px; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; scroll-behavior:smooth; scrollbar-width:thin; scrollbar-color:var(--zune) #1a1a1a; -webkit-overflow-scrolling:touch}
+.panodemo::-webkit-scrollbar{height:6px}
+.panodemo::-webkit-scrollbar-thumb{background:var(--zune)}
+.panodemo::-webkit-scrollbar-track{background:#1a1a1a}
+.panotrack{position:relative; height:100%; display:flex; align-items:flex-end; padding:0 0 40px 0; width:max-content}
+.panoghost{position:absolute; left:40px; top:24px; font-size:120px; font-variation-settings:'wght' 250; text-transform:lowercase; color:#fff; opacity:.16; pointer-events:none; white-space:nowrap; will-change:transform}
+.panoghost b{color:var(--zune); font-variation-settings:'wght' 250; opacity:1}
+.panel{flex:none; width:300px; padding:0 36px; align-self:flex-end; scroll-snap-align:start; transition:outline .2s}
+.panel:focus-visible{outline:2px solid var(--zune); outline-offset:4px}
+.panel .cat{font-size:11px; font-variation-settings:'wght' 700; letter-spacing:.18em; text-transform:uppercase; margin-bottom:14px}
+.panel .img{height:150px; background:var(--bg-3); position:relative; overflow:hidden; margin-bottom:14px}
+.panel .img i{position:absolute; inset:0; opacity:.9}
+.panel h5{font-size:22px; font-variation-settings:'wght' var(--w-head); line-height:1.08; margin-bottom:8px}
+.panel .by{font-size:11px; color:var(--ink-3); letter-spacing:.05em}
+.panel.lead{width:380px}
+.panel.lead h5{font-size:29px}
+.pano-shell::after{content:''; position:absolute; top:0; right:0; bottom:14px; width:64px; pointer-events:none; background:linear-gradient(90deg,transparent,#0a0a0a); z-index:4}
+.pano-nav{position:absolute; top:14px; right:14px; z-index:6; display:flex; gap:8px}
+.pano-nav button{width:38px; height:38px; border:1px solid var(--line-2); background:#0a0a0acc; color:var(--ink-2); cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; transition:all var(--dur-fast) var(--ease)}
+.pano-nav button:hover,.pano-nav button:focus-visible{border-color:var(--zune); color:var(--ink); background:var(--zune-16)}
+.pano-fallback{font-size:12px; color:var(--ink-3); margin-top:14px; letter-spacing:.04em}
+.pano-fallback b{color:var(--ink-2)}
+.view-all-btn{display:inline-block; margin-top:12px; font-size:12px; color:var(--zune); text-decoration:underline; text-underline-offset:3px}
+
+.pivot{background:#0a0a0a}
+.pivot-tabs{display:flex; gap:30px; padding:26px 30px 0; overflow-x:auto; scrollbar-width:none}
+.pivot-tabs::-webkit-scrollbar{display:none}
+.pivot-tabs button{background:none; border:none; cursor:pointer; font-family:inherit; font-size:29px; font-variation-settings:'wght' 280; text-transform:lowercase; color:var(--ink-3); transition:color var(--dur-base) var(--ease), font-variation-settings var(--dur-base) var(--ease); padding-bottom:14px; position:relative; white-space:nowrap}
+.pivot-tabs button::after{content:''; position:absolute; left:0; right:0; bottom:0; height:2px; background:var(--zune); transform:scaleX(0); transform-origin:left; transition:transform var(--dur-base) var(--ease)}
+.pivot-tabs button.on{color:var(--ink); font-variation-settings:'wght' 420; transform:scale(1.01)}
+.pivot-tabs button.on::after{transform:scaleX(1)}
+.pivot-tabs button:not(.on):hover,.pivot-tabs button:not(.on):focus-visible{color:var(--ink-2)}
+.pivot-body{padding:8px 30px 34px; min-height:240px}
+.pivot-pane{display:none; animation:slidein var(--dur-slow) var(--ease)}
+.pivot-pane.on{display:block}
+@keyframes slidein{from{opacity:0; transform:translateX(40px)}to{opacity:1; transform:none}}
+.pivot-list{max-width:580px}
+.pl-item{display:flex; align-items:center; gap:14px; padding:13px 0; border-top:1px solid var(--line); font-size:15px; font-variation-settings:'wght' var(--w-body); color:var(--ink-2)}
+.pl-item .pl-dot{width:8px; height:8px; flex:none}
+.pl-item .pl-cat{font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); font-variation-settings:'wght' 640; width:62px; flex:none}
+.pl-item .pl-rank{font-size:26px; font-variation-settings:'wght' 250; color:var(--zune); width:26px; flex:none; line-height:1}
+.pl-item .pl-meta{margin-left:auto; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); white-space:nowrap}
+
+.tilegrid{display:grid; grid-template-columns:repeat(4,1fr); grid-auto-rows:150px; gap:14px}
+@media(max-width:760px){.tilegrid{grid-template-columns:repeat(2,1fr)}}
+.tile{position:relative; padding:18px; overflow:hidden; display:flex; flex-direction:column; justify-content:flex-end; transition:transform var(--dur-fast) var(--ease)}
+.tile:hover{transform:scale(.985)}
+.tile.wide{grid-column:span 2}
+.tile.tall{grid-row:span 2}
+.tile .tt{font-size:11px; font-variation-settings:'wght' 800; letter-spacing:.12em; text-transform:uppercase; opacity:.92}
+.tile h6{font-variation-settings:'wght' var(--w-head); line-height:1.08; margin-top:6px}
+.tile.tall h6{font-size:25px}
+.tile h6.sm{font-size:17px}
+
+/* News */
+.comp-grid{display:grid; gap:30px}
+.breaking{display:flex; align-items:stretch; border:1px solid var(--line); overflow:hidden}
+.breaking .flag{background:var(--c-politics); color:#000; padding:14px 18px; font-size:12px; font-variation-settings:'wght' 800; letter-spacing:.12em; text-transform:uppercase; display:flex; align-items:center; white-space:nowrap}
+.breaking .txt{padding:14px 18px; font-size:16px; font-variation-settings:'wght' var(--w-body); color:var(--ink); display:flex; align-items:center}
+.breaking .txt b{font-variation-settings:'wght' 600}
+
+.newscard{background:var(--bg); display:flex; flex-direction:column; position:relative; transition:transform var(--dur-base) var(--ease), box-shadow var(--dur-base) var(--ease)}
+.newscard:hover{transform:translateY(-5px); box-shadow:0 14px 32px -12px rgba(0,0,0,.65)}
+.newscard::after{content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--zune-28); transition:background-color var(--dur-base) var(--ease)}
+.newscard:hover::after,.newscard:focus-within::after,.newscard:focus-visible::after{background:var(--zune)}
+.newscard .ph{height:170px; position:relative; overflow:hidden}
+.newscard .ph i{position:absolute; inset:0}
+.newscard .ph .cat{position:absolute; left:0; bottom:0; font-size:10px; font-variation-settings:'wght' 800; letter-spacing:.14em; text-transform:uppercase; color:#000; padding:5px 10px}
+.newscard .pad{padding:20px 22px 24px}
+.newscard h5{font-size:21px; font-variation-settings:'wght' var(--w-head); line-height:1.12; margin-bottom:12px}
+.newscard .foot{display:flex; justify-content:space-between; font-size:11px; color:var(--ink-3); letter-spacing:.04em}
+.newscard .foot .au{color:var(--ink-2)}
+
+.bleed-head{font-size:clamp(42px, 7vw, 88px); font-variation-settings:'wght' 250; line-height:.9; letter-spacing:-.025em; text-transform:lowercase; margin-bottom:14px}
+.bleed-head .keep{display:block}
+.bleed-head .echo{display:block; overflow:hidden; white-space:nowrap; text-overflow:clip; color:var(--zune-32)}
+.bleed-head em{color:var(--zune); font-style:normal}
+.bleed-subhead{font-size:clamp(26px, 5vw, 48px); font-variation-settings:'wght' 250; line-height:.95; letter-spacing:-.02em; text-transform:lowercase; margin:32px 0 12px; color:var(--ink-2)}
+
+/* Social */
+.feedpost{background:var(--bg); padding:22px 24px; transition:transform var(--dur-fast) var(--ease); position:relative}
+.feedpost::before{content:''; position:absolute; left:0; top:18px; bottom:18px; width:3px; background:var(--c-tech); opacity:.28; transition:opacity var(--dur-fast) var(--ease)}
+.feedpost:hover::before,.feedpost:focus-within::before{opacity:1}
+.feedpost:hover{transform:translateY(-3px)}
+.feedpost .top{display:flex; align-items:center; gap:14px; margin-bottom:16px}
+.feedpost .av{width:46px; height:46px; flex:none; display:flex; align-items:center; justify-content:center; font-variation-settings:'wght' 800; font-size:18px; color:#000}
+.feedpost .who .n{font-size:15px; font-variation-settings:'wght' 600}
+.feedpost .who .h{font-size:12px; color:var(--ink-3)}
+.feedpost .when{margin-left:auto; font-size:11px; color:var(--ink-3); letter-spacing:.08em; text-transform:uppercase}
+.feedpost .body{font-size:16px; font-variation-settings:'wght' var(--w-body); color:var(--ink); line-height:1.5; margin-bottom:18px}
+.feedpost .body span{color:var(--zune)}
+.reactions{display:flex; gap:24px; flex-wrap:wrap}
+.reactions button{background:none; border:none; color:var(--ink-3); font-family:inherit; font-size:12px; letter-spacing:.12em; text-transform:uppercase; font-variation-settings:'wght' 600; cursor:pointer; display:flex; align-items:center; gap:8px; transition:color .2s; padding:4px 0}
+.reactions button:hover,.reactions button:focus-visible{color:var(--ink)}
+.reactions button .ic{width:7px; height:7px; background:currentColor; display:inline-block}
+.reactions button.liked{color:var(--zune)}
+
+.density-bar{display:flex; align-items:center; gap:12px; margin-bottom:20px}
+.density-bar .seg{display:flex; border:1px solid var(--line-2)}
+.density-bar .seg button{background:none; border:none; color:var(--ink-3); font-family:inherit; font-size:11px; letter-spacing:.12em; text-transform:uppercase; font-variation-settings:'wght' 640; padding:8px 16px; cursor:pointer; transition:all var(--dur-fast) var(--ease)}
+.density-bar .seg button.on{background:var(--zune); color:#000}
+.density-bar .lbl{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-3)}
+
+.feed{border-top:1px solid var(--line)}
+.feed .row{display:flex; gap:14px; align-items:flex-start; padding:18px 4px; border-bottom:1px solid var(--line); transition:background var(--dur-fast) var(--ease)}
+.feed .row:hover{background:var(--bg-2)}
+.feed .row .av{width:40px; height:40px; flex:none; display:flex; align-items:center; justify-content:center; font-variation-settings:'wght' 800; font-size:15px; color:#000}
+.feed .row .main{flex:1; min-width:0}
+.feed .row .line1{display:flex; gap:8px; align-items:baseline; font-size:14px}
+.feed .row .line1 .n{font-variation-settings:'wght' 600; color:var(--ink)}
+.feed .row .line1 .h{color:var(--ink-3); font-size:12px}
+.feed .row .line1 .t{margin-left:auto; color:var(--ink-3); font-size:11px; letter-spacing:.08em; text-transform:uppercase; white-space:nowrap}
+.feed .row .txt{font-size:14px; color:var(--ink-2); line-height:1.5; margin-top:4px}
+.feed .row .txt span{color:var(--zune)}
+.feed.compact .row{padding:7px 4px; align-items:center}
+.feed.compact .row .av{width:24px; height:24px; font-size:11px}
+.feed.compact .row .line1{font-size:13px}
+.feed.compact .row .txt{margin-top:0; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.feed.compact .row .main{display:flex; flex-direction:column; gap:1px}
+
+/* Comment thread (NEW) */
+.comment-thread{margin-top:40px; border-top:1px solid var(--line); padding-top:24px}
+.comment{display:flex; gap:14px; padding:16px 0; border-bottom:1px solid var(--line)}
+.comment:last-child{border-bottom:none}
+.comment .av{width:36px; height:36px; flex:none; display:flex; align-items:center; justify-content:center; font-variation-settings:'wght' 800; font-size:14px; color:#000; background:var(--c-tech)}
+.comment .body{flex:1}
+.comment .meta{font-size:12px; color:var(--ink-3); margin-bottom:4px}
+.comment .meta b{color:var(--ink); font-variation-settings:'wght' 600}
+.comment .txt{font-size:14px; color:var(--ink-2); line-height:1.5}
+.comment .reply{font-size:12px; color:var(--zune); margin-top:6px; cursor:pointer}
+.comment .reply:hover{text-decoration:underline}
+
+/* Profile */
+.profhead{position:relative; background:#0a0a0a; overflow:hidden; padding:40px 34px}
+.profhead .bigname{font-size:clamp(44px,9vw,88px); font-variation-settings:'wght' 250; text-transform:lowercase; line-height:.88; white-space:nowrap; overflow:hidden}
+.profhead .handle{color:var(--ink-3); margin-top:14px; font-size:14px; letter-spacing:.1em}
+.profhead .bio{max-width:520px; margin-top:18px; color:var(--ink-2); font-size:15px; font-variation-settings:'wght' var(--w-body)}
+.profhead .stats{display:flex; gap:34px; margin-top:26px; flex-wrap:wrap}
+.profhead .stats div .n{font-size:26px; font-variation-settings:'wght' 250; color:var(--zune)}
+.profhead .stats div .l{font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-3)}
+.profhead .follow{position:absolute; top:36px; right:34px; background:var(--zune); color:#000; border:none; font-family:inherit; font-variation-settings:'wght' 700; font-size:12px; letter-spacing:.14em; text-transform:uppercase; padding:13px 26px; cursor:pointer; transition:background var(--dur-fast) var(--ease)}
+.profhead .follow:hover,.profhead .follow:focus-visible{background:var(--zune-bright)}
+.profhead .follow.off{background:transparent; color:var(--ink); box-shadow:inset 0 0 0 1px var(--ink-3)}
+.profhead .follow.off:hover{box-shadow:inset 0 0 0 1px var(--zune)}
+
+/* Notifications */
+.notif{display:flex; gap:16px; align-items:center; padding:15px 20px; border-bottom:1px solid var(--line)}
+.notif:first-child{border-top:1px solid var(--line)}
+.notif .bar{width:3px; align-self:stretch; flex:none}
+.notif .ico{width:34px; height:34px; flex:none; display:flex; align-items:center; justify-content:center; font-variation-settings:'wght' 800; color:#000; font-size:13px}
+.notif .kind{font-size:10px; letter-spacing:.16em; text-transform:uppercase; font-variation-settings:'wght' 640; width:74px; flex:none}
+.notif .nt{font-size:14px; font-variation-settings:'wght' var(--w-body); color:var(--ink-2)}
+.notif .nt b{color:var(--ink); font-variation-settings:'wght' 600}
+.notif .nw{margin-left:auto; font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.1em; white-space:nowrap}
+
+/* Motion */
+.motiongrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line)}
+.motioncard{background:var(--bg); padding:30px 28px}
+.motioncard h4{font-size:20px; font-variation-settings:'wght' var(--w-page); text-transform:lowercase; margin-bottom:10px}
+.motioncard p{font-size:13px; color:var(--ink-2); line-height:1.6}
+.motioncard .demo{height:54px; margin-top:18px; position:relative; overflow:hidden; background:#000; border:1px solid var(--line)}
+.motioncard .demo .blk{position:absolute; top:50%; left:14px; width:30px; height:30px; background:var(--zune); transform:translateY(-50%)}
+
+.m-slide .blk{animation:mslide var(--dur-slow) infinite var(--ease)}
+@keyframes mslide{0%{left:-30px}32%,68%{left:calc(100% - 44px)}100%{left:-30px}}
+.m-stack .blk{animation:mstack var(--dur-slow) infinite var(--ease)}
+.m-stack .blk:nth-child(2){left:54px; background:var(--c-tech); animation-delay:.1s}
+.m-stack .blk:nth-child(3){left:94px; background:var(--c-culture); animation-delay:.22s}
+@keyframes mstack{0%{opacity:0; transform:translate(32px,-50%)}26%,76%{opacity:1; transform:translate(0,-50%)}100%{opacity:0; transform:translate(32px,-50%)}}
+.m-turn .blk{animation:mturn var(--dur-slow) infinite var(--ease); transform-origin:left center}
+@keyframes mturn{0%,100%{transform:translateY(-50%) rotateY(86deg)}20%,72%{transform:translateY(-50%) rotateY(0deg)}}
+.m-lift .demo{background:var(--bg-2); border:none}
+.m-lift .blk{width:120px; height:38px; left:50%; top:50%; transform:translate(-50%,-50%); background:var(--zune); border-radius:2px; transition:transform var(--dur-base) var(--ease), box-shadow var(--dur-base) var(--ease)}
+.m-lift:hover .blk{transform:translate(-50%,-56%); box-shadow:0 16px 28px -10px rgba(0,0,0,.55)}
+.m-push .demo{background:var(--bg-2); border:none}
+.m-push .blk{width:110px; height:32px; left:20px; top:50%; transform:translateY(-50%); background:var(--zune); border-radius:2px; transition:transform var(--dur-base) var(--ease)}
+.m-push:hover .blk{transform:translate(28px, -50%)}
+
+.motion-tokens{margin-top:40px; font-size:13px; color:var(--ink-3)}
+.motion-tokens code{background:#111; padding:1px 6px; border-radius:2px; color:var(--ink-2)}
+
+.rm-note{margin-top:30px; border:1px solid var(--line); border-left:3px solid var(--c-tech); background:#0a0a0a; padding:22px 26px}
+.rm-note .t{font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--c-tech); font-variation-settings:'wght' 640; margin-bottom:10px}
+.rm-note p{font-size:14px; color:var(--ink-2); line-height:1.6; max-width:640px}
+.rm-note code{background:#111; padding:1px 6px; border-radius:2px; color:var(--ink-2); font-size:13px}
+
+/* Do / Don't */
+.ddgrid{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line); border:1px solid var(--line)}
+@media(max-width:680px){.ddgrid{grid-template-columns:1fr}}
+.dd{padding:34px 30px; background:var(--bg)}
+.dd .tag{font-size:13px; font-variation-settings:'wght' 800; letter-spacing:.14em; text-transform:uppercase; margin-bottom:22px; display:flex; align-items:center; gap:10px}
+.dd.do .tag{color:var(--c-sport)}
+.dd.dont .tag{color:var(--c-politics)}
+.dd .tag span{width:9px; height:9px; background:currentColor}
+.dd ul{list-style:none}
+.dd li{font-size:14px; color:var(--ink-2); padding:11px 0; border-bottom:1px solid var(--line); line-height:1.55}
+.dd li:last-child{border:none}
+.dd li b{color:var(--ink); font-variation-settings:'wght' 540}
+
+/* Footer */
+footer{padding:88px var(--gut) 56px; border-top:1px solid var(--line)}
+footer .big{font-size:clamp(40px,9vw,116px); font-variation-settings:'wght' 250; text-transform:lowercase; line-height:.85; letter-spacing:-.02em}
+footer .big em{font-style:normal; color:var(--zune)}
+footer .row{display:flex; justify-content:space-between; flex-wrap:wrap; gap:20px; margin-top:38px; font-size:12px; color:var(--ink-3); letter-spacing:.08em; text-transform:uppercase}
+
+/* Reveal */
+.reveal{opacity:0; transform:translateY(24px); transition:opacity .7s var(--ease), transform .7s var(--ease)}
+.reveal.in{opacity:1; transform:none}
+.stagger.in>*{animation:rise .6s var(--ease) backwards}
+.stagger.in>*:nth-child(1){animation-delay:.02s}
+.stagger.in>*:nth-child(2){animation-delay:.09s}
+.stagger.in>*:nth-child(3){animation-delay:.16s}
+.stagger.in>*:nth-child(4){animation-delay:.23s}
+.stagger.in>*:nth-child(5){animation-delay:.3s}
+.stagger.in>*:nth-child(6){animation-delay:.37s}
+@keyframes rise{from{opacity:0; transform:translateY(22px)}to{opacity:1; transform:none}}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001ms!important; animation-iteration-count:1!important; transition-duration:.001ms!important; scroll-behavior:auto!important}
+  .reveal{opacity:1!important; transform:none!important}
+  .panoghost{transform:none!important}
+  .scrollhint{animation:none!important}
+  .m-slide .blk,.m-stack .blk,.m-turn .blk{animation:none!important}
+  .m-stack .blk{opacity:1!important; transform:translateY(-50%)!important}
+  .m-turn .blk{transform:translateY(-50%)!important}
+  .pivot-pane{animation:none!important}
+  .panodemo{scroll-behavior:auto!important}
+}
+
+/* Tier-1 spec components */
+.spec-table{border:1px solid var(--line); border-bottom:none; margin:0 0 22px}
+.spec-table .st-row{display:grid; gap:16px; padding:13px 18px; border-bottom:1px solid var(--line); font-size:14px; color:var(--ink-2); align-items:center}
+.spec-table.cols-2 .st-row{grid-template-columns:1fr 1.5fr}
+.spec-table.cols-3 .st-row{grid-template-columns:1.4fr 1fr 1fr}
+.spec-table.cols-4 .st-row{grid-template-columns:1.3fr 1fr 1.1fr 1.5fr}
+.spec-table.cols-5 .st-row{grid-template-columns:1.3fr 1.3fr .7fr .7fr 1.5fr}
+.spec-table .st-row span:first-child{color:var(--ink); font-variation-settings:'wght' 520}
+.spec-table .st-head{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-3) !important; font-variation-settings:'wght' 640; background:var(--bg-2)}
+.spec-table .st-head span:first-child{color:var(--ink-3); font-variation-settings:'wght' 640}
+.spec-table .st-row.dim, .spec-table .st-row.dim span:first-child{color:var(--ink-3)}
+.spec-note{font-size:14px; color:var(--ink-3); line-height:1.65; max-width:680px; margin:0 0 26px}
+.spec-note b{color:var(--ink-2); font-variation-settings:'wght' 560}
+.spec-note code, .codeblock{font-family:ui-monospace, SFMono-Regular, Menlo, monospace}
+.spec-note code{background:#141414; padding:1px 6px; border-radius:2px; color:var(--ink-2); font-size:13px}
+.codeblock{font-size:13px; color:var(--ink-2); background:#0a0a0a; border:1px solid var(--line); border-left:3px solid var(--zune); padding:14px 18px; margin:0 0 20px; overflow-x:auto; line-height:1.65; white-space:pre-wrap; word-break:break-word}
+.scale{display:flex; flex-direction:column; gap:8px; margin:0 0 22px}
+.scale .sc{display:flex; align-items:center; gap:16px}
+.scale .sc i{height:14px; background:var(--zune); display:block; flex:none; max-width:70vw}
+.scale .sc span{font-size:12px; color:var(--ink-3); letter-spacing:.08em; font-variation-settings:'wght' 600}
+@media(max-width:620px){
+  .spec-table .st-row{font-size:12px; gap:8px; padding:11px 12px}
+  .spec-table.cols-4 .st-row, .spec-table.cols-5 .st-row{gap:6px}
+}
+
+/* backend diagrams */
+.arch{display:flex; flex-direction:column; gap:14px; border:1px solid var(--line); background:#0a0a0a; padding:24px}
+.tier{display:flex; flex-direction:column; gap:8px}
+.tier .tl{font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-3); font-variation-settings:'wght' 640}
+.tier .row{display:flex; gap:10px; flex-wrap:wrap}
+.node{flex:1; min-width:130px; border:1px solid var(--line-2); background:var(--bg-2); padding:12px 14px; font-size:12.5px; color:var(--ink-3); line-height:1.45}
+.node b{display:block; color:var(--ink); font-variation-settings:'wght' 560; font-size:13px; margin-bottom:3px; text-transform:lowercase}
+.node.edge{border-left:3px solid var(--zune)}
+.node.svc{border-left:3px solid var(--c-tech)}
+.node.data{border-left:3px solid var(--c-world)}
+.node.async{border-left:3px solid var(--c-violet)}
+.arch .bus{border:1px dashed var(--c-violet); color:var(--c-violet); text-align:center; padding:9px; font-size:11px; letter-spacing:.16em; text-transform:uppercase; font-variation-settings:'wght' 640}
+.arch .down{text-align:center; color:var(--ink-3); font-size:13px; line-height:1; margin:-4px 0}
+.flow{display:flex; align-items:stretch; flex-wrap:wrap; border:1px solid var(--line); background:#0a0a0a; margin:0 0 22px}
+.flow .step{flex:1; min-width:140px; padding:16px; border-right:1px solid var(--line)}
+.flow .step:last-child{border-right:none}
+.flow .step .sn{font-size:11px; color:var(--zune); font-variation-settings:'wght' 800; letter-spacing:.1em}
+.flow .step b{display:block; color:var(--ink); font-variation-settings:'wght' 540; font-size:14px; margin:7px 0 4px; text-transform:lowercase}
+.flow .step span{font-size:12px; color:var(--ink-3); line-height:1.5}
+@media(max-width:620px){ .node,.flow .step{min-width:46%} }
+
+.codeblock .c{color:var(--ink-3)}
+.codeblock .k{color:var(--zune)}
+.pill{display:inline-block; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--zune); border:1px solid var(--line-2); padding:3px 9px; margin:0 6px 6px 0; font-variation-settings:'wght' 600}
+.pills{margin:0 0 22px}
+
+.pill.off{color:var(--ink-3); border-style:dashed; border-color:var(--line-2)}
+.illus{font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3); margin:0 0 14px}
+</style>
+</head>
+<body>
+
+<div class="strip">
+  <div class="mark">the<b>·</b>codex <span class="v">engine</span></div>
+  <nav id="mainNav">
+    <a href="#principles">principles</a>
+    <a href="#contract">the domain</a>
+    <a href="#status">errors</a>
+    <a href="#architecture">architecture</a>
+    <a href="#publishing">publishing</a>
+    <a href="#feed">graph &amp; feed</a>
+    <a href="#events">realtime</a>
+    <a href="#tokens">tokens</a>
+  </nav>
+  <button class="nav-toggle" id="navToggle">menu</button>
+</div>
+
+<header class="pano">
+  <div class="deco"></div>
+  <p class="kicker" style="margin-bottom:24px">the codex backend — liveview · ash · oban · pubsub</p>
+  <h1 class="giant pano-title">the&nbsp;<em>engine</em></h1>
+  <p class="sub">The domain is modelled in <em>Ash</em>, rendered through <em>LiveView</em>, kept live with <em>PubSub</em>, and offloaded to <em>Oban</em>. This edition describes the system as it is built today — and says plainly where it isn't there yet.</p>
+  <div class="meta">
+    <div><div class="n">01</div><div class="l">principles</div></div>
+    <div><div class="n">02</div><div class="l">the domain</div></div>
+    <div><div class="n">03</div><div class="l">errors</div></div>
+    <div><div class="n">04</div><div class="l">architecture</div></div>
+    <div><div class="n">05</div><div class="l">publishing</div></div>
+    <div><div class="n">06</div><div class="l">graph &amp; feed</div></div>
+    <div><div class="n">07</div><div class="l">realtime</div></div>
+  </div>
+  <div class="scrollhint">scroll &darr;</div>
+</header>
+
+<div class="changelog reveal">
+  <div class="cl-head"><span class="t">what the engine actually does</span><span class="s">claims grounded in the codebase, not the wishlist</span></div>
+  <div class="ci"><div class="n">01 · model in ash</div><div class="d">The domain is <b>Ash resources</b>; the LiveView UI is built from them. One declaration of the rules.</div></div>
+  <div class="ci"><div class="n">02 · policies on the resource</div><div class="d">Authorization is <b>declared where the data lives</b> via Ash.Policy.Authorizer, enforced per action.</div></div>
+  <div class="ci"><div class="n">03 · durable work in oban</div><div class="d">Async runs on <b>real queues</b> — default, aggregation, ai — supervised, retried, idempotent.</div></div>
+  <div class="ci"><div class="n">04 · live by default</div><div class="d">Changes broadcast over <b>Phoenix.PubSub</b>; subscribed LiveViews <b>stream_insert</b> with no polling.</div></div>
+  <div class="ci"><div class="n">05 · let it crash</div><div class="d">Every connection and job is a <b>supervised process</b>; one failure never takes the node down.</div></div>
+  <div class="ci"><div class="n">06 · streams, not state</div><div class="d">Collections render through <b>LiveView streams</b> — bounded DOM, bounded process memory.</div></div>
+</div>
+
+<!-- 01 PRINCIPLES -->
+<section class="block" id="principles">
+  <div class="block-head reveal"><span class="idx">01</span><h2>principles</h2><span class="tail"></span></div>
+  <p class="lede reveal">The BEAM gives concurrency, isolation and distribution for free; Ash gives the domain a home. The discipline is to <b>declare the system once</b> and let the framework render the rest — and to keep this document honest about what is wired up versus what is merely possible.</p>
+  <div class="principles stagger reveal">
+    <div class="principle"><div class="pn">i</div><h3>the resource is the truth</h3><p>The domain is modelled once as Ash resources — attributes, relationships, actions, policies. The LiveView UI is generated from them; business rules have one home, not five.</p></div>
+    <div class="principle"><div class="pn">ii</div><h3>declare, don't hand-roll</h3><p>Validations, authorization and aggregates live on the resource as data. The web layer calls actions; it does not re-implement them, and it does not reach around Ash with raw Ecto.</p></div>
+    <div class="principle"><div class="pn">iii</div><h3>infra, chosen deliberately</h3><p>Postgres is the record <i>and</i> the job queue (Oban). A two-tier <b>ETS → Redis</b> cache fronts the hot path, and <b>Meilisearch + pgvector</b> power search. Not "nothing but Postgres" — but nothing without a reason.</p></div>
+    <div class="principle"><div class="pn">iv</div><h3>let it crash, supervised</h3><p>Each connection is a LiveView process, each task an Oban job — isolated and restarted by a supervisor. A bad request crashes one process, never the system.</p></div>
+    <div class="principle"><div class="pn">v</div><h3>changes go live</h3><p>State changes broadcast over Phoenix.PubSub; subscribed LiveViews stream the update straight into the DOM. The change and the live update are one motion.</p></div>
+    <div class="principle"><div class="pn">vi</div><h3>fail typed</h3><p>Ash returns structured error classes — invalid, forbidden, not_found. LiveView turns them into form errors and flashes. Same failure, rendered, never a bare 500.</p></div>
+  </div>
+</section>
+
+<!-- 02 THE DOMAIN -->
+<section class="block" id="contract">
+  <div class="block-head reveal"><span class="idx">02</span><h2>the domain</h2><span class="tail"></span></div>
+  <p class="lede reveal">The back-end's grammar is the <b>Ash resource</b>: attributes, relationships, actions and policies in one place. Today that one declaration drives the <b>LiveView</b> UI. AshJsonApi and AshGraphql can be generated from the very same resource — but the codex doesn't expose them yet (the <code>/api</code> scope is dormant).</p>
+
+  <p class="illus reveal">snippets show the shape — names are illustrative, not transcribed from the repo</p>
+  <div class="codeblock reveal">defmodule Codex.Content.Post do
+  use Ash.Resource,
+    domain: Codex.Content,
+    data_layer: AshPostgres.DataLayer,
+    authorizers: [Ash.Policy.Authorizer]
+
+  attributes do
+    uuid_primary_key :id                     <span class="c"># UUIDv4</span>
+    attribute :body, :string, allow_nil?: false,
+      constraints: [max_length: 280]
+    attribute :state, :atom,
+      constraints: [one_of: [:draft, :published]], default: :draft
+    timestamps()
+  end
+
+  relationships do
+    belongs_to :author, Codex.Accounts.User
+    has_many :comments, Codex.Content.Comment
+  end
+
+  actions do
+    defaults [:read, :destroy]
+    update :publish, change: set_attribute(:state, :published)
+  end
+
+  policies do
+    policy action_type(:read) do
+      authorize_if expr(state == :published or author_id == ^actor(:id))
+    end
+    policy action(:publish) do
+      authorize_if actor_present()
+    end
+  end
+end</div>
+  <p class="spec-note reveal">The web layer never re-implements these rules — it <b>calls the action</b>, and the policy runs automatically.</p>
+
+  <p class="comp-label spaced reveal">interfaces — what's wired up</p>
+  <div class="pills reveal">
+    <span class="pill">LiveView · code interface</span>
+    <span class="pill">AshPostgres</span>
+    <span class="pill">Ash.Policy.Authorizer</span>
+    <span class="pill">Phoenix.PubSub</span>
+  </div>
+  <p class="illus reveal" style="margin-top:18px">available from the same resource — not adopted in the codebase</p>
+  <div class="pills reveal">
+    <span class="pill off">AshJsonApi</span>
+    <span class="pill off">AshGraphql</span>
+    <span class="pill off">AshOban</span>
+    <span class="pill off">AshPaperTrail</span>
+    <span class="pill off">AshStateMachine</span>
+    <span class="pill off">uuid_v7</span>
+  </div>
+
+  <p class="comp-label spaced reveal">conventions, as they actually stand</p>
+  <div class="spec-table cols-2 reveal">
+    <div class="st-row st-head"><span>concern</span><span>today</span></div>
+    <div class="st-row"><span>identifiers</span><span>uuid_primary_key — UUIDv4 (not sortable)</span></div>
+    <div class="st-row"><span>pagination</span><span>default_page_type :keyset; most reads unpaginated</span></div>
+    <div class="st-row"><span>authorization</span><span>Ash policies, checked per action</span></div>
+    <div class="st-row"><span>writes</span><span>Ash actions — never raw Ecto from the web layer</span></div>
+    <div class="st-row"><span>broadcasts</span><span>Phoenix.PubSub on change &rarr; LiveView</span></div>
+    <div class="st-row"><span>external API</span><span>none — LiveView only; /api commented out</span></div>
+  </div>
+</section>
+
+<!-- 03 ERRORS -->
+<section class="block" id="status">
+  <div class="block-head reveal"><span class="idx">03</span><h2>errors</h2><span class="tail"></span></div>
+  <p class="lede reveal">The front-end has a color ramp; Ash has <b>error classes</b>. They're raised once by the action and rendered in the LiveView — as inline form errors, as flashes, as live error routes.</p>
+
+  <p class="comp-label reveal">ash error classes</p>
+  <div class="swatches reveal">
+    <div class="swatch" style="background:var(--state-warning)"><div class="cr">form</div><div><div class="nm">invalid</div><div class="hx">validation · changeset</div></div></div>
+    <div class="swatch" style="background:var(--c-politics)"><div class="cr">flash</div><div><div class="nm">forbidden</div><div class="hx">policy denied</div></div></div>
+    <div class="swatch" style="background:var(--c-world)"><div class="cr">404</div><div><div class="nm">not_found</div><div class="hx">missing or hidden</div></div></div>
+    <div class="swatch" style="background:var(--c-violet)"><div class="cr">500</div><div><div class="nm">framework</div><div class="hx">unexpected · bug</div></div></div>
+  </div>
+
+  <p class="comp-label spaced reveal">raised once, rendered in the liveview</p>
+  <div class="codeblock reveal">case Codex.Content.publish(post, actor: user) do
+  {:ok, post} ->
+    {:noreply, stream_insert(socket, :posts, post, at: 0)}
+  {:error, %Ash.Error.Forbidden{}} ->
+    {:noreply, put_flash(socket, :error, "Not allowed")}
+  {:error, %Ash.Error.Invalid{} = err} ->
+    {:noreply, assign(socket, form: to_form(err))}   <span class="c"># inline field errors</span>
+end</div>
+  <p class="spec-note reveal">The structured class is what the UI switches on — <code>%Ash.Error.Invalid{}</code> becomes field errors, <code>Forbidden</code> a flash. If a JSON:API were ever exposed, AshJsonApi would map the same classes to status codes for free — but that path isn't live today.</p>
+</section>
+
+<!-- 04 ARCHITECTURE -->
+<section class="block" id="architecture">
+  <div class="block-head reveal"><span class="idx">04</span><h2>architecture</h2><span class="tail"></span></div>
+  <p class="lede reveal">The shape is OTP, not a service mesh. A browser holds a <b>WebSocket</b> to a <b>LiveView process</b>; that talks to <b>Ash</b> and the context modules, which talk to <b>Postgres</b>. A two-tier cache, search, and Oban sit alongside; PubSub spans the cluster.</p>
+
+  <p class="comp-label reveal">topology</p>
+  <div class="arch reveal">
+    <div class="tier"><div class="tl">client</div><div class="row"><div class="node edge">browser — minimal JS; server holds the state</div></div></div>
+    <div class="down">&updownarrow; websocket (diffs)</div>
+    <div class="tier"><div class="tl">phoenix endpoint</div><div class="row"><div class="node edge"><b>endpoint · router · plugs</b>tls, auth, Hammer throttles, dead render then upgrade</div></div></div>
+    <div class="down">&darr;</div>
+    <div class="tier"><div class="tl">otp processes (one per connection)</div><div class="row">
+      <div class="node svc"><b>liveview</b>assigns + streams, handle_event / handle_info</div>
+      <div class="node svc"><b>presence</b>who's online</div>
+    </div></div>
+    <div class="down">&darr;</div>
+    <div class="tier"><div class="tl">domain — ash + context modules (illustrative grouping)</div><div class="row">
+      <div class="node svc"><b>accounts</b>users, auth</div>
+      <div class="node svc"><b>content</b>articles, posts</div>
+      <div class="node svc"><b>social</b>follows, feed (social.ex)</div>
+      <div class="node svc"><b>interactions</b>comments, reactions, notifications</div>
+    </div></div>
+    <div class="bus">&updownarrow; phoenix.pubsub · cluster-wide &updownarrow;</div>
+    <div class="tier"><div class="tl">data &amp; work</div><div class="row">
+      <div class="node data"><b>postgres</b>system of record + Oban queue</div>
+      <div class="node data"><b>ets &rarr; redis</b>two-tier cache (cache.ex)</div>
+      <div class="node data"><b>meilisearch + pgvector</b>full-text + embeddings (search.ex)</div>
+      <div class="node async"><b>oban</b>queues: default · aggregation · ai</div>
+    </div></div>
+  </div>
+  <p class="spec-note reveal">One Postgres carries the records and the job queue. Caching is explicit and two-tier — <b>ETS</b> in-process, <b>Redis</b> shared across nodes — and search is its own subsystem: Meilisearch for text, pgvector for semantic similarity, fed by AI workers on the <code>:ai</code> queue.</p>
+
+  <p class="comp-label spaced reveal">the liveview lifecycle — the request, reframed</p>
+  <div class="flow reveal">
+    <div class="step"><span class="sn">01</span><b>dead render</b><span>first HTTP request returns static HTML</span></div>
+    <div class="step"><span class="sn">02</span><b>connect</b><span>websocket opens, LV process spawns</span></div>
+    <div class="step"><span class="sn">03</span><b>mount</b><span>load via Ash/context, subscribe to PubSub</span></div>
+    <div class="step"><span class="sn">04</span><b>handle_event</b><span>user acts &rarr; Ash action (policy-checked)</span></div>
+    <div class="step"><span class="sn">05</span><b>handle_info</b><span>PubSub msg &rarr; stream_insert</span></div>
+    <div class="step"><span class="sn">06</span><b>diff</b><span>only changed DOM is pushed down</span></div>
+  </div>
+</section>
+
+<!-- 05 PUBLISHING -->
+<section class="block" id="publishing">
+  <div class="block-head reveal"><span class="idx">05</span><h2>the publishing pipeline</h2><span class="tail"></span></div>
+  <p class="lede reveal">Publishing is <b>one Ash action</b> — validate, authorize, persist — followed by a <b>PubSub broadcast</b> so live feeds update, and an <b>Oban job</b> for the work that shouldn't block the author, chiefly building search.</p>
+
+  <p class="comp-label reveal">the action — synchronous, transactional</p>
+  <div class="flow reveal">
+    <div class="step"><span class="sn">01</span><b>validate</b><span>changeset + resource constraints</span></div>
+    <div class="step"><span class="sn">02</span><b>authorize</b><span>policy check on :publish</span></div>
+    <div class="step"><span class="sn">03</span><b>persist</b><span>state :draft &rarr; :published</span></div>
+    <div class="step"><span class="sn">04</span><b>after</b><span>PubSub broadcast + enqueue Oban job</span></div>
+  </div>
+
+  <p class="comp-label spaced reveal">off the action — the real oban queues</p>
+  <div class="arch reveal">
+    <div class="tier"><div class="tl">oban</div><div class="row">
+      <div class="node async"><b>:ai</b>embeddings &rarr; pgvector + Meilisearch index</div>
+      <div class="node async"><b>:aggregation</b>counts &amp; rollups</div>
+      <div class="node async"><b>:default</b>everything else</div>
+    </div></div>
+  </div>
+  <div class="codeblock reveal">defmodule Codex.Search.EmbedWorker do
+  use Oban.Worker, queue: :ai
+
+  @impl true
+  def perform(%Oban.Job{args: %{"post_id" => id}}) do
+    <span class="c"># build embedding, upsert into pgvector + Meilisearch document</span>
+    :ok
+  end
+end</div>
+  <p class="spec-note reveal">Jobs are enqueued from the action (a plain <code>Oban.insert/1</code> in an after-action change — not AshOban, which isn't installed). Each worker is independent and idempotent; a failed job retries with exponential backoff and lands in <code>discarded</code> after its attempts. A slow embedding never blocks the publish.</p>
+</section>
+
+<!-- 06 GRAPH & FEED -->
+<section class="block" id="feed">
+  <div class="block-head reveal"><span class="idx">06</span><h2>graph &amp; feed</h2><span class="tail"></span></div>
+  <p class="lede reveal">The timeline is computed <b>on read</b>. <code>social.ex</code> gathers recent posts from the accounts you follow, per request, fronted by the ETS&rarr;Redis cache — and PubSub makes it feel live without recomputing anything.</p>
+
+  <p class="comp-label reveal">how the feed is built today</p>
+  <div class="arch reveal">
+    <div class="tier"><div class="tl">on read — every request</div><div class="row">
+      <div class="node svc">reader opens the feed</div>
+      <div class="node svc">social.ex queries posts from followed authors</div>
+      <div class="node data">ETS &rarr; Redis cache fronts the result</div>
+    </div></div>
+    <div class="tier"><div class="tl">live — while you watch</div><div class="row">
+      <div class="node svc">a new post broadcasts on PubSub</div>
+      <div class="node svc">subscribed feed LiveViews handle_info</div>
+      <div class="node data">stream_insert(:posts, post, at: 0)</div>
+    </div></div>
+  </div>
+  <p class="spec-note reveal">On-read is simple and always correct; it recomputes per request, which the cache absorbs. (Fan-out-on-write with a follower threshold is the known scaling step — see <i>not yet</i>, below.)</p>
+
+  <p class="comp-label spaced reveal">the live feed — streams, not assigns</p>
+  <div class="codeblock reveal">def mount(_params, _session, socket) do
+  if connected?(socket),
+    do: Phoenix.PubSub.subscribe(Codex.PubSub, "feed:#{socket.assigns.current_user.id}")
+  posts = Codex.Social.timeline(socket.assigns.current_user)   <span class="c"># on read, cached</span>
+  {:ok, stream(socket, :posts, posts)}
+end
+
+def handle_info({:new_post, post}, socket) do
+  {:noreply, stream_insert(socket, :posts, post, at: 0)}        <span class="c"># live, no recompute</span>
+end</div>
+  <p class="spec-note reveal"><b>Streams</b> keep the collection in the DOM, not in process memory — the same pattern already in the activity, article_reader, notifications, profile and room LiveViews. Counts come from aggregation jobs; comment threads are a depth-capped Ash resource.</p>
+
+  <p class="comp-label spaced reveal">search &amp; discovery</p>
+  <div class="spec-table cols-3 reveal">
+    <div class="st-row st-head"><span>need</span><span>engine</span><span>note</span></div>
+    <div class="st-row"><span>full-text</span><span>Meilisearch</span><span>typo-tolerant keyword search</span></div>
+    <div class="st-row"><span>semantic</span><span>pgvector embeddings</span><span>built by AI workers (:ai queue)</span></div>
+    <div class="st-row"><span>paging</span><span>offset</span><span>the one place keyset isn't used yet</span></div>
+  </div>
+</section>
+
+<!-- 07 REALTIME -->
+<section class="block" id="events">
+  <div class="block-head reveal"><span class="idx">07</span><h2>realtime</h2><span class="tail"></span></div>
+  <p class="lede reveal">The engine in <b>motion</b> splits cleanly: <b>PubSub</b> for the ephemeral and live, <b>Oban</b> for the durable and guaranteed. Knowing which is which is the whole correctness story.</p>
+
+  <p class="comp-label reveal">two channels, two guarantees</p>
+  <div class="spec-table cols-3 reveal">
+    <div class="st-row st-head"><span></span><span>phoenix.pubsub</span><span>oban</span></div>
+    <div class="st-row"><span>for</span><span>live UI updates</span><span>work that must happen</span></div>
+    <div class="st-row"><span>delivery</span><span>best-effort, in-memory</span><span>at-least-once, durable</span></div>
+    <div class="st-row"><span>if a node drops</span><span>message is lost</span><span>job survives, retries</span></div>
+    <div class="st-row"><span>idempotency</span><span>n/a (transient)</span><span>per-worker; unique keys if needed</span></div>
+    <div class="st-row"><span>queues</span><span>topics (e.g. feed:&lt;id&gt;)</span><span>default · aggregation · ai</span></div>
+    <div class="st-row"><span>source</span><span>broadcast on change</span><span>Oban.insert from the action</span></div>
+  </div>
+  <p class="spec-note reveal"><b>Never use PubSub for something that must happen.</b> A like-count tick or a "new posts" banner is PubSub — miss it and the next read corrects it. An embedding, an email, a charge is Oban — it retries until it succeeds or is explicitly discarded.</p>
+
+  <div class="rm-note reveal">
+    <div class="t">backpressure — the engine yields, it doesn't collapse</div>
+    <p>As the front-end honours <code>prefers-reduced-motion</code>, the back-end honours load. Oban queues have fixed concurrency (default 10, aggregation 5, ai 3), so a flood of work <b>queues</b> rather than overwhelming Postgres. A LiveView that crashes is restarted by its supervisor with the client none the wiser. Degrade, never collapse.</p>
+  </div>
+</section>
+
+<!-- 08 DO / DON'T -->
+<section class="block">
+  <div class="block-head reveal"><span class="idx">08</span><h2>do · don't</h2><span class="tail"></span></div>
+  <div class="ddgrid reveal">
+    <div class="dd do">
+      <div class="tag"><span></span>do</div>
+      <ul>
+        <li>Model the domain <b>once</b> as Ash resources.</li>
+        <li>Declare <b>policies on the resource</b>; let each action enforce them.</li>
+        <li>Go through <b>actions</b>, never raw Ecto, from the web layer.</li>
+        <li>Render collections with LiveView <b>streams</b>, not assigns.</li>
+        <li>Broadcast changes over <b>PubSub</b> for live updates.</li>
+        <li>Put work that <b>must happen</b> in Oban (default / aggregation / ai).</li>
+        <li><b>Let it crash</b> — supervise, don't defensively rescue.</li>
+        <li>Front hot reads with the <b>ETS &rarr; Redis</b> cache.</li>
+      </ul>
+    </div>
+    <div class="dd dont">
+      <div class="tag"><span></span>don't</div>
+      <ul>
+        <li>Re-implement resource rules in LiveViews or contexts.</li>
+        <li>Reach around Ash with <b>raw Ecto</b> in the web layer.</li>
+        <li>Trust <b>PubSub for durable delivery</b> — that's Oban's job.</li>
+        <li>Hold big collections in <b>assigns</b>.</li>
+        <li>Block on slow work in <code>handle_event</code> — enqueue it.</li>
+        <li>Claim interfaces (JSON:API, GraphQL) the codebase <b>doesn't expose</b>.</li>
+        <li>Scatter authorization across the web layer.</li>
+        <li>Swallow Ash errors — render them typed.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- NOT YET -->
+<section class="block">
+  <div class="block-head reveal"><span class="idx">&mdash;</span><h2>not yet</h2><span class="tail"></span></div>
+  <p class="lede reveal">An honest manifesto names its own gaps. Everything below was implied by earlier drafts but is <b>not in the codebase</b> — kept here as a deliberate roadmap, not a description of the present.</p>
+  <div class="spec-table cols-2 reveal">
+    <div class="st-row st-head"><span>idea</span><span>reality today</span></div>
+    <div class="st-row"><span>uuid_v7 sortable keys</span><span>uuid_primary_key — UUIDv4</span></div>
+    <div class="st-row"><span>AshJsonApi / AshGraphql</span><span>LiveView only; /api scope commented out</span></div>
+    <div class="st-row"><span>AshOban triggers</span><span>plain Oban.insert from actions</span></div>
+    <div class="st-row"><span>AshPaperTrail audit</span><span>not installed</span></div>
+    <div class="st-row"><span>AshStateMachine</span><span>state is a plain atom attribute</span></div>
+    <div class="st-row"><span>fan-out-on-write + threshold</span><span>feed is recomputed on read</span></div>
+    <div class="st-row"><span>keyset on all reads</span><span>keyset is the default; search uses offset</span></div>
+  </div>
+</section>
+
+<!-- 09 TOKENS -->
+<section class="block" id="tokens">
+  <div class="block-head reveal"><span class="idx">09</span><h2>tokens</h2><span class="tail"></span></div>
+  <p class="lede reveal">The engine's tokens are <b>queues, cache tiers and search engines</b> — the config that's actually in <code>config/</code>. Where a real number isn't pinned here, it lives per-worker or per-action in code; this doc won't invent one. Ships as <code>codex-backend-tokens.json</code>.</p>
+
+  <div class="tokens reveal">
+    <div class="token"><div class="label">oban queues</div><div class="val">default: 10</div><div class="val">aggregation: 5 · ai: 3</div><div class="desc">Concurrency caps = built-in backpressure.</div><button class="copy" data-copy="queues: [default: 10, aggregation: 5, ai: 3]">copy</button></div>
+    <div class="token"><div class="label">oban retries</div><div class="val">exp backoff (Oban default)</div><div class="val">max_attempts per worker</div><div class="desc">Discarded after attempts = the DLQ.</div><button class="copy" data-copy="exponential backoff; max_attempts set per worker; discarded = DLQ">copy</button></div>
+    <div class="token"><div class="label">ids</div><div class="val">uuid_primary_key</div><div class="val">UUIDv4</div><div class="desc">Across ~35 resources.</div><button class="copy" data-copy="uuid_primary_key (UUIDv4)">copy</button></div>
+    <div class="token"><div class="label">cache</div><div class="val">L1 ETS · L2 Redis</div><div class="val">cache.ex</div><div class="desc">Two-tier; TTLs per key in code.</div><button class="copy" data-copy="ETS (L1) -> Redis (L2); redix ~> 1.5">copy</button></div>
+    <div class="token"><div class="label">search</div><div class="val">Meilisearch + pgvector</div><div class="val">offset paging</div><div class="desc">Indexed by :ai workers.</div><button class="copy" data-copy="Meilisearch (full-text) + pgvector (semantic); offset paging">copy</button></div>
+    <div class="token"><div class="label">pagination</div><div class="val">default_page_type :keyset</div><div class="val">most reads unpaginated</div><div class="desc">Limits per read action.</div><button class="copy" data-copy="default_page_type: :keyset">copy</button></div>
+    <div class="token"><div class="label">liveview</div><div class="val">streams for collections</div><div class="val">5 LiveViews today</div><div class="desc">activity · article_reader · notifications · profile · room</div><button class="copy" data-copy="LiveView streams for collections">copy</button></div>
+    <div class="token"><div class="label">rate limit</div><div class="val">Hammer</div><div class="val">per auth action</div><div class="desc">sign_in · register · reset — not a blanket API tier.</div><button class="copy" data-copy="Hammer; per auth action (sign_in, register, reset)">copy</button></div>
+  </div>
+</section>
+
+<footer>
+  <div class="big reveal">model <em>once</em>, render everywhere.</div>
+  <div class="row reveal">
+    <span>the codex · engine — liveview · ash · oban · pubsub</span>
+    <span>grounded in the codebase · gaps named</span>
+    <span>let it crash · supervised</span>
+  </div>
+</footer>
+
+<script>
+const io = new IntersectionObserver((es)=>{ es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} }); },{threshold:.12});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+const navToggle = document.getElementById('navToggle');
+const mainNav = document.getElementById('mainNav');
+if(navToggle && mainNav){
+  navToggle.addEventListener('click',()=>{ const o=mainNav.classList.toggle('open'); navToggle.textContent=o?'close':'menu'; });
+  mainNav.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{ mainNav.classList.remove('open'); navToggle.textContent='menu'; }));
+}
+document.querySelectorAll('.copy').forEach(btn=>{
+  btn.addEventListener('click',async()=>{ try{ await navigator.clipboard.writeText(btn.dataset.copy); const t=btn.textContent; btn.textContent='copied'; setTimeout(()=>btn.textContent=t,1200);}catch(e){} });
+});
+</script>
+</body>
+</html>

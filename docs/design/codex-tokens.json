@@ -1,0 +1,145 @@
+{
+  "color": {
+    "bg": "#0c0c0c",
+    "bg-2": "#161616",
+    "bg-3": "#1f1f1f",
+    "ink": "#ffffff",
+    "ink-2": "#c2c2c2",
+    "ink-3": "#9a9a9a",
+    "line": "#2a2a2a",
+    "line-2": "#383838",
+    "accent": {
+      "DEFAULT": "#f2660a",
+      "bright": "#ff8636",
+      "deep": "#c9540a",
+      "08": "rgba(242,102,10,.08)",
+      "16": "rgba(242,102,10,.16)",
+      "28": "rgba(242,102,10,.28)",
+      "32": "rgba(242,102,10,.34)"
+    },
+    "category": {
+      "world": "#1ba1e2",
+      "politics": "#ff311d",
+      "tech": "#00aba9",
+      "culture": "#ff0d8e",
+      "sport": "#8cbf26",
+      "money": "#718d68",
+      "violet": "#be4eff"
+    },
+    "status": {
+      "error": "#ff311d",
+      "success": "#8cbf26",
+      "warning": "#e0a93b",
+      "info": "#1ba1e2"
+    },
+    "disabled": {
+      "bg": "#1a1a1a",
+      "ink": "#5a5a5a"
+    },
+    "reading": {
+      "bg": "#f4f4f4",
+      "ink": "#111111",
+      "accent": "#c9540a"
+    }
+  },
+  "accentState": {
+    "wash": "{color.accent.08}",
+    "rest": "{color.accent.28}",
+    "default": "{color.accent}",
+    "hover": "{color.accent.bright}",
+    "pressed": "{color.accent.deep}",
+    "focusRing": "{color.accent}",
+    "focusOffset": "3px"
+  },
+  "type": {
+    "family": "'Roboto Flex','Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif",
+    "axis": {
+      "wght": [
+        100,
+        1000
+      ],
+      "opsz": [
+        8,
+        144
+      ]
+    },
+    "weight": {
+      "display": {
+        "value": 250,
+        "range": [
+          250,
+          340
+        ]
+      },
+      "page": {
+        "value": 300,
+        "range": [
+          300,
+          400
+        ]
+      },
+      "head": {
+        "value": 360,
+        "range": [
+          340,
+          420
+        ]
+      },
+      "body": {
+        "value": 360,
+        "range": [
+          360,
+          440
+        ]
+      },
+      "strong": {
+        "value": 560,
+        "range": [
+          520,
+          600
+        ]
+      },
+      "label": {
+        "value": 640,
+        "range": [
+          600,
+          680
+        ]
+      }
+    },
+    "floor": {
+      "weight": 360,
+      "size": "11px"
+    }
+  },
+  "space": {
+    "3xs": "4px",
+    "2xs": "8px",
+    "xs": "12px",
+    "sm": "16px",
+    "md": "24px",
+    "lg": "32px",
+    "xl": "48px",
+    "2xl": "64px",
+    "3xl": "96px",
+    "4xl": "128px",
+    "gut": "clamp(20px,5vw,80px)"
+  },
+  "grid": {
+    "columns": 12,
+    "gutter": "24px",
+    "max": "1280px"
+  },
+  "breakpoint": {
+    "narrow": "600px",
+    "wide": "960px",
+    "ultra": "1440px"
+  },
+  "motion": {
+    "ease": "cubic-bezier(.2,.88,.2,1)",
+    "fast": "160ms",
+    "base": "260ms",
+    "slow": "380ms",
+    "reveal": "700ms"
+  }
+}

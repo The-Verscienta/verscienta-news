@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.6
-ARG ELIXIR_VERSION=1.19.3
-ARG OTP_VERSION=27.3.4.1
-FROM hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-bookworm-slim AS builder
+ARG ELIXIR_VERSION=1.19.5
+ARG OTP_VERSION=27.3.4.15
+FROM hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-bookworm-20260713-slim AS builder
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends git build-essential libvips-dev curl && rm -rf /var/lib/apt/lists/*
 COPY kiln_cms ./kiln_cms
