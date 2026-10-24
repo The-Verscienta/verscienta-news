@@ -4,12 +4,17 @@ defmodule VerscientaNews.Catalog.Article do
   inherits blocks (Portable Text), workflow (draft → in_review → published →
   archived), PaperTrail, and fired-artefact delivery.
 
-  Wellness categories map to a custom `category` field plus `tags`:
-  Nutrition, Herbalism, Mindfulness, Movement, Functional Medicine, TCM,
-  Ayurveda, Environment and extensible others.
+  Wellness categories: nutrition, herbalism, mindfulness, movement,
+  functional_medicine, tcm, ayurveda, environment.
 
-  Aggregation metadata (source_url, quality_score, ai_summary) are stored as
-  custom fields so they remain queryable without a separate table.
+  The public path is this type's alias, `/[field:category]/[slug]`.
+  Workflow states are Kiln's: `draft`, `in_review`, `published`, `archived`.
+
+  Source license and attribution are applied by
+  `VerscientaNews.Ingestion.Poller.apply_license/1` from
+  `VerscientaNews.Ingestion.Allowlist` before a body is stored.
+  `claim_status` for Slice 1 is `unreviewed`, `flagged`, or `cleared`.
+  The medical disclaimer is fired-template copy, not a stored acknowledgement.
   """
 
   use KilnCMS.CMS.Content,

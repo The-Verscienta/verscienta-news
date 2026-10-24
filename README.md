@@ -1,71 +1,68 @@
 # Verscienta News
 
-Wellness-focused news reader built on **KilnCMS** (Elixir/Ash/Phoenix) + **SvelteKit** frontend. See `docs/project-overview.md` (Codex-gated) and `kiln_cms/KilnCMS_Project_Plan.md` for upstream architecture.
+Wellness reader on **KilnCMS v1.0.0** (submodule `kiln_cms/`, overlay `projects/verscienta_news/`). Single delivery path is Kiln fired `/:slug`; SvelteKit is a thin reader until the cut line.
+
+> Critique applied: `docs/plan-critique.md` — see `docs/slice-1.md` for the first shippable, `docs/source-rights.md` for legal gate, and `docs/architecture.md` for the deferred-correct ADS.
 
 ## Stack
 
 | Layer | Choice |
 |---|---|
-| Backend CMS | `kiln_cms` v1.0.0 pinned as git submodule (`kiln_cms/`), overlay `projects/verscienta_news/` |
-| Middleware / BFF | Elixir (Broadway + Oban + Req) in same OTP release; Ollama Llama for AI |
-| Search | Postgres FTS + Meilisearch (hybrid) + pgvector semantic |
-| Frontend | SvelteKit + TypeScript + Tailwind 4 + Vite, TipTap editor, `phoenix` JS Channels |
-| Realtime / Rooms | Phoenix Channels + Presence; LiveKit (WebRTC) optional profile |
-| DB | Postgres 16; Dragonfly optional multi-node cache |
+| Backend | `kiln_cms` v1.0.0 (`kiln_cms/`), overlay `projects/verscienta_news/` |
+| Poll/AI | Oban + Req/Floki/ElixirFeedParser + Ollama advisory (no Broadway, no auto-publish threshold) |
+| Search | Kiln Postgres FTS Slice 1; Meilisearch/pgvector deferred |
+| Reader | SvelteKit + TS + Tailwind 4 + Vite (`phoenix` JS reserved for Slice 3 channels) |
+| Trust | Human review queue + `source_license`/`attribution`/`claim_status` + disclaimer (Slice 1) |
+| DB/ops | Postgres 16, Cachex/Hammer, PubSub; Dragonfly deferred (Kiln D2) |
 
 ## Quick start
 
 ```bash
 docker compose up -d postgres
-# optional: docker compose --profile search up -d
-# optional: docker compose --profile ml up -d   # ollama
-
 cd kiln_cms
 mix setup        # deps.get + ash.setup + assets.setup
-mix phx.server   # http://localhost:4000 (Kiln + delivery)
+mix phx.server   # http://localhost:4000  (fired /:slug lives here)
 
-# frontend (separate terminal)
+# reader (thin fetch of /api/content/article/:slug?format=json)
 cd ../frontend
 npm install
-npm run dev      # http://localhost:5173 proxies /api to :4000
+npm run dev      # http://localhost:5173
 ```
 
-Overlay activation: `config/project.exs` (and duplicate at `kiln_cms/config/project.exs` for local dev without Docker) registers `VerscientaNews.Catalog` + `VerscientaNews.Plugin`.
+Auth: **AshAuthentication** (not Pow/Ueberauth). Log in at Kiln `/sign-in`; Svelte forwards session cookie / `Authorization: Bearer <api_key>` (from `POST /api/auth/sign_in`). No writes from Svelte until Slice 1 exit.
 
-## Project structure
+## Structure
 
 ```
-kiln_cms/                      # submodule, v1.0.0
+kiln_cms/                      # submodule v1.0.0
 projects/verscienta_news/      # canonical overlay (copied into image)
-  catalog.ex / catalog/article.ex
+  catalog.ex / catalog/article.ex  # source_url unique + source_license/attribution/claim fields
   blocks/wellness_callout.ex
+  services/ (poller, ai_llama advisory, recommendation deferred)
   plugin.ex
-  project.exs                  # also at config/project.exs + kiln_cms/config/project.exs
 config/project.exs             # overlay activation
-frontend/                      # SvelteKit app
-docker-compose.yml             # postgres + optional profiles
+frontend/                      # thin reader: /, /article/[slug], /category/*, /search
+docs/slice-1.md, source-rights.md, architecture.md, ingestion.md, moderation.md
 ```
 
-Building the overlaid image (production, `PROJECT=verscienta_news`):
+Image:
 
 ```dockerfile
 COPY kiln_cms /app/kiln_cms
 COPY projects/verscienta_news /app/kiln_cms/projects/verscienta_news
 COPY config/project.exs /app/kiln_cms/config/project.exs
-RUN --build-arg PROJECT=verscienta_news mix release
 ```
 
-## Delivery
+## Delivery (single path)
 
-- Public web: Kiln renders `/<slug>` from fired artifacts (`VerscientaNews.Catalog.Article`); headless: `/api/json`, `/gql`, `/api/content/article/:slug`, `/api/search`, `/sitemap.xml`, `/feed.json`.
-- Frontend consumes headless APIs; channels at `/socket` for comments/rooms/presence.
+Fired `web` at `/:slug` + `?format=json` for the reader. No Svelte `/write` TipTap — author at Kiln `/editor`. See `docs/slice-1.md` exit criteria before promoting follow graph / vitality / For You / LiveKit.
 
 ## Verify
 
 ```bash
-cd kiln_cms && mix precommit              # format, credo --strict, dialyzer, sobelow, tests
+cd kiln_cms && mix precommit
 mix kiln.plugins.doctor && mix kiln.search.check
 cd ../frontend && npm run check && npm run build
 ```
 
-Design tokens: `frontend/src/lib/tokens/codex.css` (Codex-gated — map Kiln ember `base-*/primary` to `the-codex-v6.html` values when readable). See `docs/design/codex-notes.md`.
+Design tokens: `frontend/src/lib/tokens/codex.css` (Codex-gated, see `docs/design/codex-notes.md`).

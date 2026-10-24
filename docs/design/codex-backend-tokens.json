@@ -1,0 +1,75 @@
+{
+  "_note": "Grounded in repo audit. 'confirmed' = present in the codebase; 'aspirational_not_in_codebase' = referenced by earlier drafts but NOT implemented.",
+  "confirmed": {
+    "ids": "uuid_primary_key (UUIDv4) \u2014 35 resources, not sortable",
+    "interfaces": [
+      "LiveView via Ash code interface"
+    ],
+    "interfaces_dormant": [
+      "/api scope commented out \u2014 no AshJsonApi, no AshGraphql"
+    ],
+    "pagination": {
+      "default_page_type": "keyset",
+      "reality": "most reads unpaginated; search uses offset"
+    },
+    "authorization": "Ash.Policy.Authorizer \u2014 policies on resources",
+    "cache": {
+      "l1": "ETS",
+      "l2": "Redis (redix ~> 1.5)",
+      "module": "cache.ex"
+    },
+    "search": {
+      "fulltext": "Meilisearch",
+      "semantic": "pgvector embeddings",
+      "indexer": "AI workers on Oban :ai queue",
+      "pagination": "offset",
+      "module": "search.ex"
+    },
+    "oban": {
+      "queues": {
+        "default": 10,
+        "aggregation": 5,
+        "ai": 3
+      },
+      "backoff": "exponential (per-worker max_attempts)",
+      "dead_letter": "discarded after max_attempts"
+    },
+    "feed": {
+      "strategy": "fan-out-on-read \u2014 recomputed per request",
+      "module": "social.ex",
+      "fanout_on_write": false,
+      "threshold": null
+    },
+    "realtime": {
+      "transport": "Phoenix.PubSub",
+      "ui": "LiveView streams",
+      "streams_in": [
+        "activity",
+        "article_reader",
+        "notifications",
+        "profile",
+        "room"
+      ]
+    },
+    "rate_limit": {
+      "lib": "Hammer",
+      "scope": "per auth action (sign_in, register, reset)",
+      "reality": "not a blanket anon/authed API tier"
+    },
+    "supervision": "each LiveView + Oban job is a supervised process (let it crash)"
+  },
+  "aspirational_not_in_codebase": {
+    "ids": "uuid_v7 (sortable)",
+    "interfaces": [
+      "AshJsonApi",
+      "AshGraphql"
+    ],
+    "extensions": [
+      "AshOban triggers",
+      "AshPaperTrail",
+      "AshStateMachine"
+    ],
+    "feed": "fan-out-on-write with a follower threshold",
+    "pagination": "keyset on all reads; replace offset in search"
+  }
+}

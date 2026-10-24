@@ -1,12 +1,15 @@
-# Social — Follows, Threads, Communities, Rooms, Feeds
+# Social — after Slice 1
 
-Stubs under `projects/verscienta_news/social/` — activate after schema gen.
+Nothing in this file is a Slice 1 exit. Stubs under `projects/verscienta_news/social/` stay out of `ash_domains`.
 
-- **Follow** (polymorphic: user, expert, topic/category): `follower_id`, `followable_type`, `followable_id`.
-- **Comment**: closure table `comment_paths` for threaded depth ≥3, `article_id`, `parent_id`, mentions via Portable Text annotation (`@user` → PubSub notification).
-- **Reaction**, **Repost**: enum + snapshot block type `repost`.
-- **Community/Membership**: public communities + private groups (`visibility`, `join_policy`), `CommunityMember` with `role`.
-- **Live rooms**: `Phoenix.Channel` `room:<id>` for text + `Voice`/video via LiveKit (token at `/api/livekit/token`). Presence for "who's here".
-- **Activity feeds**: global + personal fanout — write to `Activity` then PubSub → `Cachex` feed cache; frontend subscribes via `src/lib/api/realtime.ts`.
+`KilnCMS.Social` means outbound Bluesky and Mastodon when an article is published. The follow graph, when it is built, is `VerscientaNews.FollowGraph`.
 
-Moderation hooks: every creation runs Llama toxicity check → `ModerationFlag` if needed (see `docs/moderation.md`).
+Order matches `docs/slice-1.md`:
+
+1. Verified Expert and richer moderation. Not this file.
+2. Follow graph: follows, mentions, comments, reactions, reposts, activity fanout on `Phoenix.PubSub` and Cachex.
+3. A Svelte reader, which is the first place those features would be subscribed to.
+4. Recommendations.
+5. Gamification.
+
+Communities and live rooms come after the follow graph. LiveKit stays behind `livekit_enabled`. Presence uses `Phoenix.PubSub`.

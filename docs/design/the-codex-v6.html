@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>the codex v6 — zune language, refined</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,100..1000&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0c0c0c;
+  --bg-2:#161616;
+  --bg-3:#1f1f1f;
+  --ink:#ffffff;
+  --ink-2:#c2c2c2;
+  --ink-3:#9a9a9a;
+  --line:#2a2a2a;
+  --line-2:#383838;
+
+  --zune:#f2660a;
+  --zune-bright:#ff8636;
+  --zune-deep:#c9540a;
+  --zune-08:rgba(242,102,10,.08);
+  --zune-16:rgba(242,102,10,.16);
+  --zune-28:rgba(242,102,10,.28);   /* increased from .22 for better resting affordance */
+  --zune-32:rgba(242,102,10,.34);
+
+  --c-world:#1ba1e2;
+  --c-politics:#ff311d;
+  --c-tech:#00aba9;
+  --c-culture:#ff0d8e;
+  --c-sport:#8cbf26;
+  --c-money:#718d68;
+  --c-violet:#be4eff;
+
+  --gut: clamp(20px, 5vw, 80px);
+
+  --ease: cubic-bezier(.2, .88, .2, 1);
+  --dur-fast: 160ms;
+  --dur-base: 260ms;
+  --dur-slow: 380ms;
+
+  --w-display: 250;
+  --w-page: 300;
+  --w-head: 360;
+  --w-body: 360;
+  --w-strong: 560;
+  --w-label: 640;
+
+  /* spacing scale — 4px base */
+  --space-3xs:4px; --space-2xs:8px; --space-xs:12px; --space-sm:16px;
+  --space-md:24px; --space-lg:32px; --space-xl:48px; --space-2xl:64px;
+  --space-3xl:96px; --space-4xl:128px;
+
+  /* grid + breakpoints */
+  --grid-cols:12; --grid-gutter:24px; --grid-max:1280px;
+  --bp-narrow:600px; --bp-wide:960px; --bp-ultra:1440px;
+
+  /* semantic accent states — the ramp, named by job */
+  --accent-wash:var(--zune-08);
+  --accent-rest:var(--zune-28);
+  --accent:var(--zune);
+  --accent-hover:var(--zune-bright);
+  --accent-pressed:var(--zune-deep);
+  --focus-ring:var(--zune);
+  --focus-offset:3px;
+
+  /* status + disabled */
+  --state-error:#ff311d;
+  --state-success:#8cbf26;
+  --state-warning:#e0a93b;
+  --state-info:#1ba1e2;
+  --disabled-bg:#1a1a1a;
+  --disabled-ink:#5a5a5a;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Roboto Flex', system-ui, sans-serif;
+  font-optical-sizing:auto;
+  font-variation-settings:'wght' var(--w-body);
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+::selection{background:var(--zune);color:#000}
+
+:focus-visible{outline:2px solid var(--zune); outline-offset:3px}
+:focus:not(:focus-visible){outline:none}
+
+/* ===== shared ===== */
+.kicker{font-size:11px; font-variation-settings:'wght' var(--w-label); letter-spacing:.32em; text-transform:uppercase; color:var(--ink-3);}
+.giant{font-variation-settings:'wght' var(--w-display); line-height:.86; letter-spacing:-.02em; text-transform:lowercase; color:var(--ink);}
+a{color:inherit;text-decoration:none}
+
+/* Top strip */
+.strip{position:fixed; top:0; left:0; right:0; z-index:50; display:flex; align-items:center; gap:28px; padding:14px var(--gut); background:linear-gradient(#0c0c0c, #0c0c0ccc 70%, transparent); backdrop-filter:saturate(1.2);}
+.strip .mark{font-size:13px; font-variation-settings:'wght' 800; letter-spacing:.05em; text-transform:lowercase}
+.strip .mark b{color:var(--zune)}
+.strip .mark .v{color:var(--ink-3); font-variation-settings:'wght' 600; font-size:11px}
+.strip nav{display:flex; gap:22px; font-size:12px; font-variation-settings:'wght' 500; letter-spacing:.08em; text-transform:lowercase; color:var(--ink-3); margin-left:auto}
+.strip nav a{transition:color .2s; padding:2px 0}
+.strip nav a:hover, .strip nav a:focus-visible{color:var(--ink)}
+.strip .nav-toggle{display:none; background:none; border:1px solid var(--line-2); color:var(--ink-2); padding:8px 18px; font-size:11px; letter-spacing:.12em; text-transform:uppercase; cursor:pointer; transition:all .2s}
+.strip .nav-toggle:hover, .strip .nav-toggle:focus-visible{border-color:var(--zune); color:var(--ink)}
+
+@media(max-width:760px){
+  .strip nav{display:none; position:absolute; top:100%; left:0; right:0; background:#0c0c0c; padding:22px var(--gut); flex-direction:column; gap:18px; border-top:1px solid var(--line); z-index:60}
+  .strip nav.open{display:flex}
+  .strip .nav-toggle{display:block}
+}
+
+/* Hero */
+.pano{position:relative; min-height:100vh; padding:0 var(--gut); display:flex; flex-direction:column; justify-content:flex-end; padding-bottom:7vh; overflow:hidden}
+.pano .deco{position:absolute; top:0; right:-6vw; width:46vw; height:100%; background:var(--zune); opacity:.07; transform:skewX(-9deg); pointer-events:none}
+.pano .pano-title{font-size:clamp(80px, 25vw, 400px); white-space:nowrap; margin-bottom:-.04em; margin-right:calc(-1 * var(--gut) - 8vw)}
+.pano .pano-title em{font-style:normal; color:var(--zune)}
+.pano .sub{max-width:660px; margin-top:28px; font-size:clamp(16px,2vw,20px); font-variation-settings:'wght' var(--w-body); color:var(--ink-2)}
+.pano .sub em{color:var(--zune); font-style:normal; font-variation-settings:'wght' 500}
+.pano .meta{margin-top:36px; display:flex; gap:26px; flex-wrap:wrap}
+.pano .meta div .n{font-size:32px; font-variation-settings:'wght' var(--w-display); color:var(--zune)}
+.pano .meta div .l{font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-3)}
+.scrollhint{position:absolute; bottom:26px; right:var(--gut); font-size:11px; letter-spacing:.3em; text-transform:uppercase; color:var(--ink-3); animation:pulse 2.4s infinite}
+@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
+
+/* Changelog — dismissible */
+.changelog{margin:0 var(--gut); padding:26px 30px; border:1px solid var(--line); border-left:3px solid var(--zune); background:var(--zune-08); display:grid; gap:18px; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); position:relative}
+.changelog .close{position:absolute; top:14px; right:14px; background:none; border:none; color:var(--ink-3); font-size:18px; line-height:1; cursor:pointer; padding:4px; opacity:.7}
+.changelog .close:hover{opacity:1; color:var(--zune)}
+.changelog .cl-head{grid-column:1/-1; display:flex; align-items:baseline; gap:14px}
+.changelog .cl-head .t{font-size:14px; letter-spacing:.22em; text-transform:uppercase; font-variation-settings:'wght' var(--w-label); color:var(--zune)}
+.changelog .cl-head .s{font-size:13px; color:var(--ink-3)}
+.changelog .ci .n{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-3); font-variation-settings:'wght' 600; margin-bottom:6px}
+.changelog .ci .d{font-size:14px; color:var(--ink-2); line-height:1.5}
+.changelog .ci b{color:var(--ink); font-variation-settings:'wght' 520}
+
+/* Section shell */
+section.block{padding:clamp(70px,12vh,140px) var(--gut); position:relative}
+.block-head{display:flex; align-items:flex-end; gap:24px; margin-bottom:46px}
+.block-head .idx{font-size:13px; font-variation-settings:'wght' 800; color:var(--zune); letter-spacing:.1em; padding-bottom:.6em}
+.block-head h2{font-size:clamp(40px,8vw,104px); font-variation-settings:'wght' var(--w-display); line-height:.85; text-transform:lowercase; letter-spacing:-.02em}
+.block-head .tail{flex:1; height:1px; background:var(--line); margin-bottom:1em; min-width:20px}
+.lede{max-width:700px; font-size:clamp(16px,2vw,19px); color:var(--ink-2); margin-bottom:56px; font-variation-settings:'wght' var(--w-body)}
+.lede b{color:var(--ink); font-variation-settings:'wght' var(--w-strong)}
+.comp-label{font-size:11px; letter-spacing:.22em; text-transform:uppercase; color:var(--ink-3); margin:0 0 14px}
+.comp-label.spaced{margin-top:60px}
+
+/* Principles */
+.principles{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line)}
+.principle{background:var(--bg); padding:38px 32px; transition:background var(--dur-base) var(--ease)}
+.principle:hover{background:var(--bg-2)}
+.principle .pn{font-size:13px; font-variation-settings:'wght' 800; color:var(--zune); letter-spacing:.1em}
+.principle h3{font-size:25px; font-variation-settings:'wght' var(--w-page); text-transform:lowercase; margin:16px 0 12px; line-height:1.12}
+.principle p{font-size:14px; color:var(--ink-2); line-height:1.65}
+.principle p .new-tag{display:inline-block; margin-top:8px; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--zune); font-variation-settings:'wght' 640}
+
+/* Typography */
+.typescale{border-top:1px solid var(--line)}
+.typerow{display:grid; grid-template-columns:150px 1fr; gap:30px; align-items:baseline; padding:26px 0; border-bottom:1px solid var(--line)}
+.typerow .spec{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-3); line-height:1.7}
+.typerow .spec b{display:block; color:var(--ink-2); font-variation-settings:'wght' 640}
+.typerow .sample{overflow:hidden; color:var(--ink)}
+.s-display,.s-page,.s-head{text-transform:lowercase; white-space:nowrap; text-overflow:clip}
+.s-display{font-size:clamp(48px,11vw,124px); font-variation-settings:'wght' var(--w-display); line-height:.9; letter-spacing:-.02em}
+.s-page{font-size:clamp(38px,7vw,72px); font-variation-settings:'wght' var(--w-page); line-height:.95}
+.s-head{font-size:clamp(28px,4vw,44px); font-variation-settings:'wght' var(--w-head)}
+.s-title{font-size:23px; font-variation-settings:'wght' var(--w-strong); text-transform:none}
+.s-body{font-size:16px; font-variation-settings:'wght' var(--w-body); text-transform:none; white-space:normal; color:var(--ink-2); max-width:560px}
+.s-cap{font-size:11px; font-variation-settings:'wght' var(--w-label); letter-spacing:.22em; text-transform:uppercase; color:var(--ink-3)}
+
+.vf-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); margin-top:48px}
+.vf-card{background:var(--bg); padding:30px 30px 34px}
+.vf-card h4{font-size:15px; letter-spacing:.16em; text-transform:uppercase; color:var(--zune); font-variation-settings:'wght' 640; margin-bottom:8px}
+.vf-card p{font-size:14px; color:var(--ink-2); line-height:1.6; margin-bottom:20px}
+.vf-weight{font-size:clamp(40px,8vw,76px); line-height:.92; text-transform:lowercase; color:var(--ink); font-variation-settings:'wght' 250; transition:font-variation-settings var(--dur-slow) var(--ease)}
+.vf-card:hover .vf-weight, .vf-card:focus-within .vf-weight{font-variation-settings:'wght' 560}
+.vf-hint{margin-top:14px; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3)}
+.vf-range{width:100%; margin-top:18px; accent-color:var(--zune)}
+.vf-opsz-row{display:flex; align-items:baseline; gap:22px; flex-wrap:wrap}
+.vf-opsz-row .big{font-size:64px; font-variation-settings:'wght' 300; text-transform:lowercase; line-height:1}
+.vf-opsz-row .small{font-size:13px; font-variation-settings:'wght' 360; color:var(--ink-2); max-width:200px; line-height:1.5}
+
+.bleed-note{margin-top:46px; display:flex; gap:14px; align-items:center; color:var(--ink-3); font-size:13px}
+.bleed-note .swoosh{width:46px; height:46px; border:1px solid var(--zune); position:relative; flex:none}
+.bleed-note .swoosh::after{content:"Aa"; position:absolute; left:8px; top:0; font-size:40px; font-variation-settings:'wght' 250; color:var(--zune)}
+.bleed-note b{color:var(--ink)}
+
+/* Color + Ramp */
+.canvasrow{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line); border:1px solid var(--line); margin-bottom:46px}
+@media(max-width:620px){.canvasrow{grid-template-columns:1fr}}
+.canvasrow>div{padding:50px 32px}
+.canvasrow .dark{background:#0c0c0c}
+.canvasrow .lite{background:#f4f4f4; color:#111}
+.canvasrow h4{font-variation-settings:'wght' var(--w-display); font-size:32px; text-transform:lowercase; margin-bottom:8px}
+.canvasrow .accent{color:var(--zune); font-variation-settings:'wght' 600}
+.canvasrow .lite .accent{color:var(--zune-deep)}
+.canvasrow small{font-size:12px; letter-spacing:.1em; text-transform:uppercase; opacity:.55}
+
+.ramp{display:flex; border:1px solid var(--line); margin:0 0 54px; overflow:hidden}
+.ramp div{flex:1; height:84px; display:flex; align-items:flex-end; padding:8px 10px; font-size:10px; letter-spacing:.08em; text-transform:uppercase; font-variation-settings:'wght' 640}
+.ramp .r1{background:var(--zune-08); color:var(--ink-3)}
+.ramp .r2{background:var(--zune-16); color:var(--ink-2)}
+.ramp .r3{background:var(--zune-28); color:var(--ink)}
+.ramp .r4{background:var(--zune); color:#000}
+.ramp .r5{background:var(--zune-bright); color:#000}
+.ramp .r6{background:var(--zune-deep); color:#000}
+
+.swatches{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; margin-bottom:30px}
+.swatch{height:124px; position:relative; padding:14px; display:flex; flex-direction:column; justify-content:space-between; cursor:default; transition:transform var(--dur-base) var(--ease)}
+.swatch:hover{transform:translateY(-6px)}
+.swatch .cr{font-size:10px; letter-spacing:.06em; color:#000c; font-variation-settings:'wght' 700; align-self:flex-end}
+.swatch .nm{font-size:13px; font-variation-settings:'wght' 600; text-transform:lowercase; color:#000}
+.swatch .hx{font-size:10px; letter-spacing:.1em; color:#0009; font-variation-settings:'wght' 600}
+.swatch.darktxt .nm{color:#fff}.swatch.darktxt .hx{color:#fff9}.swatch.darktxt .cr{color:#fffc}
+.contrast-note{font-size:13px; color:var(--ink-3); margin-bottom:54px; line-height:1.6; max-width:640px}
+.contrast-note b{color:var(--ink-2)}
+
+/* Tokens with copy buttons */
+.tokens{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line)}
+.token{background:var(--bg); padding:24px 26px; position:relative}
+.token .label{font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink-3); margin-bottom:8px}
+.token .val{font-family:ui-monospace, monospace; font-size:14px; color:var(--ink-2); line-height:1.7}
+.token .desc{font-size:13px; color:var(--ink-3); margin-top:10px; line-height:1.5}
+.token .copy{position:absolute; top:18px; right:18px; background:none; border:1px solid var(--line-2); color:var(--ink-3); font-size:10px; padding:2px 8px; cursor:pointer; border-radius:2px; transition:all .2s}
+.token .copy:hover{border-color:var(--zune); color:var(--zune)}
+
+/* Tonal ramp usage examples (NEW) */
+.ramp-examples{display:flex; flex-wrap:wrap; gap:16px; margin:30px 0 50px}
+.ramp-examples .ex{display:flex; flex-direction:column; gap:6px}
+.ramp-examples button{font-family:inherit; font-size:13px; padding:10px 20px; border:none; cursor:pointer; transition:all var(--dur-fast) var(--ease); font-variation-settings:'wght' 600}
+.ramp-examples .resting{background:var(--zune-16); color:var(--ink)}
+.ramp-examples .hover{background:var(--zune); color:#000}
+.ramp-examples .active{background:var(--zune-bright); color:#000; transform:scale(.98)}
+.ramp-examples .label{font-size:11px; color:var(--ink-3); letter-spacing:.1em}
+
+/* Layout */
+.demo-wrap{border:1px solid var(--line); background:#0a0a0a; position:relative; overflow:hidden}
+.demo-tag{position:absolute; top:14px; left:16px; z-index:5; font-size:10px; letter-spacing:.25em; text-transform:uppercase; color:var(--ink-3); background:#0a0a0acc; padding:4px 8px}
+
+.pano-shell{position:relative}
+.panodemo{position:relative; height:440px; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; scroll-behavior:smooth; scrollbar-width:thin; scrollbar-color:var(--zune) #1a1a1a; -webkit-overflow-scrolling:touch}
+.panodemo::-webkit-scrollbar{height:6px}
+.panodemo::-webkit-scrollbar-thumb{background:var(--zune)}
+.panodemo::-webkit-scrollbar-track{background:#1a1a1a}
+.panotrack{position:relative; height:100%; display:flex; align-items:flex-end; padding:0 0 40px 0; width:max-content}
+.panoghost{position:absolute; left:40px; top:24px; font-size:120px; font-variation-settings:'wght' 250; text-transform:lowercase; color:#fff; opacity:.16; pointer-events:none; white-space:nowrap; will-change:transform}
+.panoghost b{color:var(--zune); font-variation-settings:'wght' 250; opacity:1}
+.panel{flex:none; width:300px; padding:0 36px; align-self:flex-end; scroll-snap-align:start; transition:outline .2s}
+.panel:focus-visible{outline:2px solid var(--zune); outline-offset:4px}
+.panel .cat{font-size:11px; font-variation-settings:'wght' 700; letter-spacing:.18em; text-transform:uppercase; margin-bottom:14px}
+.panel .img{height:150px; background:var(--bg-3); position:relative; overflow:hidden; margin-bottom:14px}
+.panel .img i{position:absolute; inset:0; opacity:.9}
+.panel h5{font-size:22px; font-variation-settings:'wght' var(--w-head); line-height:1.08; margin-bottom:8px}
+.panel .by{font-size:11px; color:var(--ink-3); letter-spacing:.05em}
+.panel.lead{width:380px}
+.panel.lead h5{font-size:29px}
+.pano-shell::after{content:''; position:absolute; top:0; right:0; bottom:14px; width:64px; pointer-events:none; background:linear-gradient(90deg,transparent,#0a0a0a); z-index:4}
+.pano-nav{position:absolute; top:14px; right:14px; z-index:6; display:flex; gap:8px}
+.pano-nav button{width:38px; height:38px; border:1px solid var(--line-2); background:#0a0a0acc; color:var(--ink-2); cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; transition:all var(--dur-fast) var(--ease)}
+.pano-nav button:hover,.pano-nav button:focus-visible{border-color:var(--zune); color:var(--ink); background:var(--zune-16)}
+.pano-fallback{font-size:12px; color:var(--ink-3); margin-top:14px; letter-spacing:.04em}
+.pano-fallback b{color:var(--ink-2)}
+.view-all-btn{display:inline-block; margin-top:12px; font-size:12px; color:var(--zune); text-decoration:underline; text-underline-offset:3px}
+
+.pivot{background:#0a0a0a}
+.pivot-tabs{display:flex; gap:30px; padding:26px 30px 0; overflow-x:auto; scrollbar-width:none}
+.pivot-tabs::-webkit-scrollbar{display:none}
+.pivot-tabs button{background:none; border:none; cursor:pointer; font-family:inherit; font-size:29px; font-variation-settings:'wght' 280; text-transform:lowercase; color:var(--ink-3); transition:color var(--dur-base) var(--ease), font-variation-settings var(--dur-base) var(--ease); padding-bottom:14px; position:relative; white-space:nowrap}
+.pivot-tabs button::after{content:''; position:absolute; left:0; right:0; bottom:0; height:2px; background:var(--zune); transform:scaleX(0); transform-origin:left; transition:transform var(--dur-base) var(--ease)}
+.pivot-tabs button.on{color:var(--ink); font-variation-settings:'wght' 420; transform:scale(1.01)}
+.pivot-tabs button.on::after{transform:scaleX(1)}
+.pivot-tabs button:not(.on):hover,.pivot-tabs button:not(.on):focus-visible{color:var(--ink-2)}
+.pivot-body{padding:8px 30px 34px; min-height:240px}
+.pivot-pane{display:none; animation:slidein var(--dur-slow) var(--ease)}
+.pivot-pane.on{display:block}
+@keyframes slidein{from{opacity:0; transform:translateX(40px)}to{opacity:1; transform:none}}
+.pivot-list{max-width:580px}
+.pl-item{display:flex; align-items:center; gap:14px; padding:13px 0; border-top:1px solid var(--line); font-size:15px; font-variation-settings:'wght' var(--w-body); color:var(--ink-2)}
+.pl-item .pl-dot{width:8px; height:8px; flex:none}
+.pl-item .pl-cat{font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); font-variation-settings:'wght' 640; width:62px; flex:none}
+.pl-item .pl-rank{font-size:26px; font-variation-settings:'wght' 250; color:var(--zune); width:26px; flex:none; line-height:1}
+.pl-item .pl-meta{margin-left:auto; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); white-space:nowrap}
+
+.tilegrid{display:grid; grid-template-columns:repeat(4,1fr); grid-auto-rows:150px; gap:14px}
+@media(max-width:760px){.tilegrid{grid-template-columns:repeat(2,1fr)}}
+.tile{position:relative; padding:18px; overflow:hidden; display:flex; flex-direction:column; justify-content:flex-end; transition:transform var(--dur-fast) var(--ease)}
+.tile:hover{transform:scale(.985)}
+.tile.wide{grid-column:span 2}
+.tile.tall{grid-row:span 2}
+.tile .tt{font-size:11px; font-variation-settings:'wght' 800; letter-spacing:.12em; text-transform:uppercase; opacity:.92}
+.tile h6{font-variation-settings:'wght' var(--w-head); line-height:1.08; margin-top:6px}
+.tile.tall h6{font-size:25px}
+.tile h6.sm{font-size:17px}
+
+/* News */
+.comp-grid{display:grid; gap:30px}
+.breaking{display:flex; align-items:stretch; border:1px solid var(--line); overflow:hidden}
+.breaking .flag{background:var(--c-politics); color:#000; padding:14px 18px; font-size:12px; font-variation-settings:'wght' 800; letter-spacing:.12em; text-transform:uppercase; display:flex; align-items:center; white-space:nowrap}
+.breaking .txt{padding:14px 18px; font-size:16px; font-variation-settings:'wght' var(--w-body); color:var(--ink); display:flex; align-items:center}
+.breaking .txt b{font-variation-settings:'wght' 600}
+
+.newscard{background:var(--bg); display:flex; flex-direction:column; position:relative; transition:transform var(--dur-base) var(--ease), box-shadow var(--dur-base) var(--ease)}
+.newscard:hover{transform:translateY(-5px); box-shadow:0 14px 32px -12px rgba(0,0,0,.65)}
+.newscard::after{content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--zune-28); transition:background-color var(--dur-base) var(--ease)}
+.newscard:hover::after,.newscard:focus-within::after,.newscard:focus-visible::after{background:var(--zune)}
+.newscard .ph{height:170px; position:relative; overflow:hidden}
+.newscard .ph i{position:absolute; inset:0}
+.newscard .ph .cat{position:absolute; left:0; bottom:0; font-size:10px; font-variation-settings:'wght' 800; letter-spacing:.14em; text-transform:uppercase; color:#000; padding:5px 10px}
+.newscard .pad{padding:20px 22px 24px}
+.newscard h5{font-size:21px; font-variation-settings:'wght' var(--w-head); line-height:1.12; margin-bottom:12px}
+.newscard .foot{display:flex; justify-content:space-between; font-size:11px; color:var(--ink-3); letter-spacing:.04em}
+.newscard .foot .au{color:var(--ink-2)}
+
+.bleed-head{font-size:clamp(42px, 7vw, 88px); font-variation-settings:'wght' 250; line-height:.9; letter-spacing:-.025em; text-transform:lowercase; margin-bottom:14px}
+.bleed-head .keep{display:block}
+.bleed-head .echo{display:block; overflow:hidden; white-space:nowrap; text-overflow:clip; color:var(--zune-32)}
+.bleed-head em{color:var(--zune); font-style:normal}
+.bleed-subhead{font-size:clamp(26px, 5vw, 48px); font-variation-settings:'wght' 250; line-height:.95; letter-spacing:-.02em; text-transform:lowercase; margin:32px 0 12px; color:var(--ink-2)}
+
+/* Social */
+.feedpost{background:var(--bg); padding:22px 24px; transition:transform var(--dur-fast) var(--ease); position:relative}
+.feedpost::before{content:''; position:absolute; left:0; top:18px; bottom:18px; width:3px; background:var(--c-tech); opacity:.28; transition:opacity var(--dur-fast) var(--ease)}
+.feedpost:hover::before,.feedpost:focus-within::before{opacity:1}
+.feedpost:hover{transform:translateY(-3px)}
+.feedpost .top{display:flex; align-items:center; gap:14px; margin-bottom:16px}
+.feedpost .av{width:46px; height:46px; flex:none; display:flex; align-items:center; justify-content:center; font-variation-settings:'wght' 800; font-size:18px; color:#000}
+.feedpost .who .n{font-size:15px; font-variation-settings:'wght' 600}
+.feedpost .who .h{font-size:12px; color:var(--ink-3)}
+.feedpost .when{margin-left:auto; font-size:11px; color:var(--ink-3); letter-spacing:.08em; text-transform:uppercase}
+.feedpost .body{font-size:16px; font-variation-settings:'wght' var(--w-body); color:var(--ink); line-height:1.5; margin-bottom:18px}
+.feedpost .body span{color:var(--zune)}
+.reactions{display:flex; gap:24px; flex-wrap:wrap}
+.reactions button{background:none; border:none; color:var(--ink-3); font-family:inherit; font-size:12px; letter-spacing:.12em; text-transform:uppercase; font-variation-settings:'wght' 600; cursor:pointer; display:flex; align-items:center; gap:8px; transition:color .2s; padding:4px 0}
+.reactions button:hover,.reactions button:focus-visible{color:var(--ink)}
+.reactions button .ic{width:7px; height:7px; background:currentColor; display:inline-block}
+.reactions button.liked{color:var(--zune)}
+
+.density-bar{display:flex; align-items:center; gap:12px; margin-bottom:20px}
+.density-bar .seg{display:flex; border:1px solid var(--line-2)}
+.density-bar .seg button{background:none; border:none; color:var(--ink-3); font-family:inherit; font-size:11px; letter-spacing:.12em; text-transform:uppercase; font-variation-settings:'wght' 640; padding:8px 16px; cursor:pointer; transition:all var(--dur-fast) var(--ease)}
+.density-bar .seg button.on{background:var(--zune); color:#000}
+.density-bar .lbl{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-3)}
+
+.feed{border-top:1px solid var(--line)}
+.feed .row{display:flex; gap:14px; align-items:flex-start; padding:18px 4px; border-bottom:1px solid var(--line); transition:background var(--dur-fast) var(--ease)}
+.feed .row:hover{background:var(--bg-2)}
+.feed .row .av{width:40px; height:40px; flex:none; display:flex; align-items:center; justify-content:center; font-variation-settings:'wght' 800; font-size:15px; color:#000}
+.feed .row .main{flex:1; min-width:0}
+.feed .row .line1{display:flex; gap:8px; align-items:baseline; font-size:14px}
+.feed .row .line1 .n{font-variation-settings:'wght' 600; color:var(--ink)}
+.feed .row .line1 .h{color:var(--ink-3); font-size:12px}
+.feed .row .line1 .t{margin-left:auto; color:var(--ink-3); font-size:11px; letter-spacing:.08em; text-transform:uppercase; white-space:nowrap}
+.feed .row .txt{font-size:14px; color:var(--ink-2); line-height:1.5; margin-top:4px}
+.feed .row .txt span{color:var(--zune)}
+.feed.compact .row{padding:7px 4px; align-items:center}
+.feed.compact .row .av{width:24px; height:24px; font-size:11px}
+.feed.compact .row .line1{font-size:13px}
+.feed.compact .row .txt{margin-top:0; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.feed.compact .row .main{display:flex; flex-direction:column; gap:1px}
+
+/* Comment thread (NEW) */
+.comment-thread{margin-top:40px; border-top:1px solid var(--line); padding-top:24px}
+.comment{display:flex; gap:14px; padding:16px 0; border-bottom:1px solid var(--line)}
+.comment:last-child{border-bottom:none}
+.comment .av{width:36px; height:36px; flex:none; display:flex; align-items:center; justify-content:center; font-variation-settings:'wght' 800; font-size:14px; color:#000; background:var(--c-tech)}
+.comment .body{flex:1}
+.comment .meta{font-size:12px; color:var(--ink-3); margin-bottom:4px}
+.comment .meta b{color:var(--ink); font-variation-settings:'wght' 600}
+.comment .txt{font-size:14px; color:var(--ink-2); line-height:1.5}
+.comment .reply{font-size:12px; color:var(--zune); margin-top:6px; cursor:pointer}
+.comment .reply:hover{text-decoration:underline}
+
+/* Profile */
+.profhead{position:relative; background:#0a0a0a; overflow:hidden; padding:40px 34px}
+.profhead .bigname{font-size:clamp(44px,9vw,88px); font-variation-settings:'wght' 250; text-transform:lowercase; line-height:.88; white-space:nowrap; overflow:hidden}
+.profhead .handle{color:var(--ink-3); margin-top:14px; font-size:14px; letter-spacing:.1em}
+.profhead .bio{max-width:520px; margin-top:18px; color:var(--ink-2); font-size:15px; font-variation-settings:'wght' var(--w-body)}
+.profhead .stats{display:flex; gap:34px; margin-top:26px; flex-wrap:wrap}
+.profhead .stats div .n{font-size:26px; font-variation-settings:'wght' 250; color:var(--zune)}
+.profhead .stats div .l{font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-3)}
+.profhead .follow{position:absolute; top:36px; right:34px; background:var(--zune); color:#000; border:none; font-family:inherit; font-variation-settings:'wght' 700; font-size:12px; letter-spacing:.14em; text-transform:uppercase; padding:13px 26px; cursor:pointer; transition:background var(--dur-fast) var(--ease)}
+.profhead .follow:hover,.profhead .follow:focus-visible{background:var(--zune-bright)}
+.profhead .follow.off{background:transparent; color:var(--ink); box-shadow:inset 0 0 0 1px var(--ink-3)}
+.profhead .follow.off:hover{box-shadow:inset 0 0 0 1px var(--zune)}
+
+/* Notifications */
+.notif{display:flex; gap:16px; align-items:center; padding:15px 20px; border-bottom:1px solid var(--line)}
+.notif:first-child{border-top:1px solid var(--line)}
+.notif .bar{width:3px; align-self:stretch; flex:none}
+.notif .ico{width:34px; height:34px; flex:none; display:flex; align-items:center; justify-content:center; font-variation-settings:'wght' 800; color:#000; font-size:13px}
+.notif .kind{font-size:10px; letter-spacing:.16em; text-transform:uppercase; font-variation-settings:'wght' 640; width:74px; flex:none}
+.notif .nt{font-size:14px; font-variation-settings:'wght' var(--w-body); color:var(--ink-2)}
+.notif .nt b{color:var(--ink); font-variation-settings:'wght' 600}
+.notif .nw{margin-left:auto; font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.1em; white-space:nowrap}
+
+/* Motion */
+.motiongrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line)}
+.motioncard{background:var(--bg); padding:30px 28px}
+.motioncard h4{font-size:20px; font-variation-settings:'wght' var(--w-page); text-transform:lowercase; margin-bottom:10px}
+.motioncard p{font-size:13px; color:var(--ink-2); line-height:1.6}
+.motioncard .demo{height:54px; margin-top:18px; position:relative; overflow:hidden; background:#000; border:1px solid var(--line)}
+.motioncard .demo .blk{position:absolute; top:50%; left:14px; width:30px; height:30px; background:var(--zune); transform:translateY(-50%)}
+
+.m-slide .blk{animation:mslide var(--dur-slow) infinite var(--ease)}
+@keyframes mslide{0%{left:-30px}32%,68%{left:calc(100% - 44px)}100%{left:-30px}}
+.m-stack .blk{animation:mstack var(--dur-slow) infinite var(--ease)}
+.m-stack .blk:nth-child(2){left:54px; background:var(--c-tech); animation-delay:.1s}
+.m-stack .blk:nth-child(3){left:94px; background:var(--c-culture); animation-delay:.22s}
+@keyframes mstack{0%{opacity:0; transform:translate(32px,-50%)}26%,76%{opacity:1; transform:translate(0,-50%)}100%{opacity:0; transform:translate(32px,-50%)}}
+.m-turn .blk{animation:mturn var(--dur-slow) infinite var(--ease); transform-origin:left center}
+@keyframes mturn{0%,100%{transform:translateY(-50%) rotateY(86deg)}20%,72%{transform:translateY(-50%) rotateY(0deg)}}
+.m-lift .demo{background:var(--bg-2); border:none}
+.m-lift .blk{width:120px; height:38px; left:50%; top:50%; transform:translate(-50%,-50%); background:var(--zune); border-radius:2px; transition:transform var(--dur-base) var(--ease), box-shadow var(--dur-base) var(--ease)}
+.m-lift:hover .blk{transform:translate(-50%,-56%); box-shadow:0 16px 28px -10px rgba(0,0,0,.55)}
+.m-push .demo{background:var(--bg-2); border:none}
+.m-push .blk{width:110px; height:32px; left:20px; top:50%; transform:translateY(-50%); background:var(--zune); border-radius:2px; transition:transform var(--dur-base) var(--ease)}
+.m-push:hover .blk{transform:translate(28px, -50%)}
+
+.motion-tokens{margin-top:40px; font-size:13px; color:var(--ink-3)}
+.motion-tokens code{background:#111; padding:1px 6px; border-radius:2px; color:var(--ink-2)}
+
+.rm-note{margin-top:30px; border:1px solid var(--line); border-left:3px solid var(--c-tech); background:#0a0a0a; padding:22px 26px}
+.rm-note .t{font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--c-tech); font-variation-settings:'wght' 640; margin-bottom:10px}
+.rm-note p{font-size:14px; color:var(--ink-2); line-height:1.6; max-width:640px}
+.rm-note code{background:#111; padding:1px 6px; border-radius:2px; color:var(--ink-2); font-size:13px}
+
+/* Do / Don't */
+.ddgrid{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line); border:1px solid var(--line)}
+@media(max-width:680px){.ddgrid{grid-template-columns:1fr}}
+.dd{padding:34px 30px; background:var(--bg)}
+.dd .tag{font-size:13px; font-variation-settings:'wght' 800; letter-spacing:.14em; text-transform:uppercase; margin-bottom:22px; display:flex; align-items:center; gap:10px}
+.dd.do .tag{color:var(--c-sport)}
+.dd.dont .tag{color:var(--c-politics)}
+.dd .tag span{width:9px; height:9px; background:currentColor}
+.dd ul{list-style:none}
+.dd li{font-size:14px; color:var(--ink-2); padding:11px 0; border-bottom:1px solid var(--line); line-height:1.55}
+.dd li:last-child{border:none}
+.dd li b{color:var(--ink); font-variation-settings:'wght' 540}
+
+/* Footer */
+footer{padding:88px var(--gut) 56px; border-top:1px solid var(--line)}
+footer .big{font-size:clamp(40px,9vw,116px); font-variation-settings:'wght' 250; text-transform:lowercase; line-height:.85; letter-spacing:-.02em}
+footer .big em{font-style:normal; color:var(--zune)}
+footer .row{display:flex; justify-content:space-between; flex-wrap:wrap; gap:20px; margin-top:38px; font-size:12px; color:var(--ink-3); letter-spacing:.08em; text-transform:uppercase}
+
+/* Reveal */
+.reveal{opacity:0; transform:translateY(24px); transition:opacity .7s var(--ease), transform .7s var(--ease)}
+.reveal.in{opacity:1; transform:none}
+.stagger.in>*{animation:rise .6s var(--ease) backwards}
+.stagger.in>*:nth-child(1){animation-delay:.02s}
+.stagger.in>*:nth-child(2){animation-delay:.09s}
+.stagger.in>*:nth-child(3){animation-delay:.16s}
+.stagger.in>*:nth-child(4){animation-delay:.23s}
+.stagger.in>*:nth-child(5){animation-delay:.3s}
+.stagger.in>*:nth-child(6){animation-delay:.37s}
+@keyframes rise{from{opacity:0; transform:translateY(22px)}to{opacity:1; transform:none}}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001ms!important; animation-iteration-count:1!important; transition-duration:.001ms!important; scroll-behavior:auto!important}
+  .reveal{opacity:1!important; transform:none!important}
+  .panoghost{transform:none!important}
+  .scrollhint{animation:none!important}
+  .m-slide .blk,.m-stack .blk,.m-turn .blk{animation:none!important}
+  .m-stack .blk{opacity:1!important; transform:translateY(-50%)!important}
+  .m-turn .blk{transform:translateY(-50%)!important}
+  .pivot-pane{animation:none!important}
+  .panodemo{scroll-behavior:auto!important}
+}
+
+/* Tier-1 spec components */
+.spec-table{border:1px solid var(--line); border-bottom:none; margin:0 0 22px}
+.spec-table .st-row{display:grid; gap:16px; padding:13px 18px; border-bottom:1px solid var(--line); font-size:14px; color:var(--ink-2); align-items:center}
+.spec-table.cols-2 .st-row{grid-template-columns:1fr 1.5fr}
+.spec-table.cols-3 .st-row{grid-template-columns:1.4fr 1fr 1fr}
+.spec-table.cols-4 .st-row{grid-template-columns:1.3fr 1fr 1.1fr 1.5fr}
+.spec-table.cols-5 .st-row{grid-template-columns:1.3fr 1.3fr .7fr .7fr 1.5fr}
+.spec-table .st-row span:first-child{color:var(--ink); font-variation-settings:'wght' 520}
+.spec-table .st-head{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-3) !important; font-variation-settings:'wght' 640; background:var(--bg-2)}
+.spec-table .st-head span:first-child{color:var(--ink-3); font-variation-settings:'wght' 640}
+.spec-table .st-row.dim, .spec-table .st-row.dim span:first-child{color:var(--ink-3)}
+.spec-note{font-size:14px; color:var(--ink-3); line-height:1.65; max-width:680px; margin:0 0 26px}
+.spec-note b{color:var(--ink-2); font-variation-settings:'wght' 560}
+.spec-note code, .codeblock{font-family:ui-monospace, SFMono-Regular, Menlo, monospace}
+.spec-note code{background:#141414; padding:1px 6px; border-radius:2px; color:var(--ink-2); font-size:13px}
+.codeblock{font-size:13px; color:var(--ink-2); background:#0a0a0a; border:1px solid var(--line); border-left:3px solid var(--zune); padding:14px 18px; margin:0 0 20px; overflow-x:auto; line-height:1.65; white-space:pre-wrap; word-break:break-word}
+.scale{display:flex; flex-direction:column; gap:8px; margin:0 0 22px}
+.scale .sc{display:flex; align-items:center; gap:16px}
+.scale .sc i{height:14px; background:var(--zune); display:block; flex:none; max-width:70vw}
+.scale .sc span{font-size:12px; color:var(--ink-3); letter-spacing:.08em; font-variation-settings:'wght' 600}
+@media(max-width:620px){
+  .spec-table .st-row{font-size:12px; gap:8px; padding:11px 12px}
+  .spec-table.cols-4 .st-row, .spec-table.cols-5 .st-row{gap:6px}
+}
+</style>
+</head>
+<body>
+
+<!-- Top strip -->
+<div class="strip">
+  <div class="mark">the<b>·</b>codex <span class="v">v6</span></div>
+  <nav id="mainNav">
+    <a href="#principles">principles</a>
+    <a href="#type">type</a>
+    <a href="#color">color</a>
+    <a href="#layout">layout</a>
+    <a href="#news">news</a>
+    <a href="#social">social</a>
+    <a href="#motion">motion</a>
+    <a href="#tokens">tokens</a>
+  </nav>
+  <button class="nav-toggle" id="navToggle">menu</button>
+</div>
+
+<!-- Hero -->
+<header class="pano">
+  <div class="deco"></div>
+  <p class="kicker" style="margin-bottom:24px">the zune language, refined · for news &amp; social</p>
+  <h1 class="giant pano-title">the&nbsp;<em>codex</em></h1>
+  <p class="sub">Everything that made the Zune <em>recognizable</em> — typographic drama, dark quiet canvas, one rationed accent, motion with meaning — kept intact. Everything that made it <em>hard to use</em> — clipped meaning, hidden scroll, hover-only affordances — fixed.</p>
+  <div class="meta">
+    <div><div class="n">01</div><div class="l">principles</div></div>
+    <div><div class="n">02</div><div class="l">variable type</div></div>
+    <div><div class="n">03</div><div class="l">color + ramp</div></div>
+    <div><div class="n">04</div><div class="l">layout</div></div>
+    <div><div class="n">05</div><div class="l">news</div></div>
+    <div><div class="n">06</div><div class="l">social</div></div>
+    <div><div class="n">07</div><div class="l">motion</div></div>
+  </div>
+  <div class="scrollhint">scroll ↓</div>
+</header>
+
+<!-- Changelog (dismissible) -->
+<div class="changelog reveal" id="changelog">
+  <button class="close" id="closeChangelog" aria-label="Dismiss changelog">×</button>
+  <div class="cl-head"><span class="t">what changed in v5</span><span class="s">refinements across usability, accessibility &amp; polish</span></div>
+  <div class="ci"><div class="n">01 · density persistence</div><div class="d">Your choice of <b>comfortable or compact</b> feed is now remembered.</div></div>
+  <div class="ci"><div class="n">02 · better panorama a11y</div><div class="d">Arrow controls, keyboard support, focus styles on panels, and a clear fallback.</div></div>
+  <div class="ci"><div class="n">03 · tonal ramp in use</div><div class="d">Real button examples showing resting / hover / active states using the accent ramp.</div></div>
+  <div class="ci"><div class="n">04 · comment thread</div><div class="d">A minimal reply pattern added to demonstrate how the language scales to conversation.</div></div>
+  <div class="ci"><div class="n">05 · tokens with copy</div><div class="d">One-click copy for the most useful design tokens.</div></div>
+  <div class="ci"><div class="n">06 · light reading demo</div><div class="d">Quick side-by-side of the dark vs light reading canvas.</div></div>
+</div>
+
+<!-- Principles -->
+<section class="block" id="principles">
+  <div class="block-head reveal">
+    <span class="idx">01</span>
+    <h2>principles</h2>
+    <span class="tail"></span>
+  </div>
+  <p class="lede reveal">The Zune rejected the glossy, button-heavy look of its era and leaned into being <b>authentically digital</b> — flat, typographic, alive in motion. v5 continues to protect the recognizable DNA while removing the remaining friction points that made the original hard to use at scale.</p>
+
+  <div class="principles stagger reveal">
+    <div class="principle"><div class="pn">i</div><h3>content before chrome</h3><p>The story is the interface. Strip frames, borders and decorative panels until only the words, the image and the single accent remain — but never strip the affordance that tells you something is tappable.</p></div>
+    <div class="principle"><div class="pn">ii</div><h3>type is the ui</h3><p>One <i>variable</i> typeface; hierarchy is built from weight and scale alone. The lightest weights are reserved for large sizes; anything you must read to function carries more weight.</p></div>
+    <div class="principle"><div class="pn">iii</div><h3>bleed honestly</h3><p>Headlines can still run past the margin — but only on words the reader already knows. The unique, informative part of a headline is never the part that gets clipped.</p></div>
+    <div class="principle"><div class="pn">iv</div><h3>dark, quiet canvas</h3><p>Near-black backgrounds, generous negative space. Color is rationed — one accent owns one region. The accent is now a tonal system so states never need a border.</p></div>
+    <div class="principle"><div class="pn">v</div><h3>motion has meaning — and yields</h3><p>Fast, fluid, directional. And when a reader asks for less, the system keeps its structure and drops the movement.</p></div>
+  </div>
+</section>
+
+<!-- Typography -->
+<section class="block" id="type">
+  <div class="block-head reveal">
+    <span class="idx">02</span>
+    <h2>variable type</h2>
+    <span class="tail"></span>
+  </div>
+  <p class="lede reveal">Hierarchy comes from <b>scale and weight</b>, not a zoo of fonts. One variable humanist sans (Roboto Flex) with live weight + optical size axes. Thin display weights are reserved for large sizes; optical sizing automatically thickens small text.</p>
+
+  <div class="typescale reveal">
+    <div class="typerow"><div class="spec"><b>display</b>wght 250 · ≥48px<br>−2% track</div><div class="sample s-display">today</div></div>
+    <div class="typerow"><div class="spec"><b>page title</b>wght 300 · 72px</div><div class="sample s-page">top stories</div></div>
+    <div class="typerow"><div class="spec"><b>section</b>wght 360 · 44px</div><div class="sample s-head">world &amp; politics</div></div>
+    <div class="typerow"><div class="spec"><b>headline</b>wght 560 · 23px</div><div class="sample s-title">Council approves the new river crossing after a decade of debate</div></div>
+    <div class="typerow"><div class="spec"><b>body</b>wght 360 · 16px<br>line 1.55</div><div class="sample s-body">Body copy stays light and airy, but never thinner than 360. Measure holds at 60–70 characters.</div></div>
+    <div class="typerow"><div class="spec"><b>label</b>wght 640 · 11px<br>+22% track</div><div class="sample s-cap">breaking · 4 min read · politics</div></div>
+  </div>
+
+  <p class="comp-label spaced reveal">explore the variable axes — hover or focus a card, or drag the slider</p>
+  <div class="vf-grid reveal">
+    <div class="vf-card" tabindex="0">
+      <h4>weight on focus</h4>
+      <p>A headline gains presence the moment it becomes the thing you’re looking at.</p>
+      <div class="vf-weight">river crossing</div>
+      <div class="vf-hint">wght 250 → 560 on hover/focus</div>
+    </div>
+    <div class="vf-card">
+      <h4>weight, by hand</h4>
+      <p>Drag to explore the full weight axis.</p>
+      <div id="vfDrag" class="vf-weight" style="font-variation-settings:'wght' 250">interface</div>
+      <input id="vfRange" class="vf-range" type="range" min="100" max="900" value="250" aria-label="Adjust font weight">
+      <div class="vf-hint" id="vfReadout">wght 250 — drag the slider</div>
+    </div>
+    <div class="vf-card">
+      <h4>optical sizing (auto)</h4>
+      <p>One file serves 12px and 120px. Small text automatically thickens for legibility.</p>
+      <div class="vf-opsz-row">
+        <span class="big">Ag</span>
+        <span class="small">This caption uses the same typeface — optical sizing quietly thickens the strokes.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="bleed-note reveal">
+    <span class="swoosh"></span>
+    <span>The <b>edge-bleed</b> is a flourish, not a rule — reserved for known echoes. <b>Full text always lives in the DOM</b> for screen readers and search.</span>
+  </div>
+
+  <p class="comp-label spaced reveal">type roles — weight &amp; size ranges</p>
+  <div class="spec-table cols-4 reveal">
+    <div class="st-row st-head"><span>role</span><span>weight</span><span>size · clamp</span><span>tracking · case</span></div>
+    <div class="st-row"><span>display</span><span>250–340</span><span>48 → 124px</span><span>−2% · lowercase</span></div>
+    <div class="st-row"><span>page title</span><span>300–400</span><span>38 → 72px</span><span>−1% · lowercase</span></div>
+    <div class="st-row"><span>section</span><span>340–420</span><span>28 → 44px</span><span>normal · lowercase</span></div>
+    <div class="st-row"><span>headline</span><span>520–600</span><span>18 → 28px</span><span>normal · sentence</span></div>
+    <div class="st-row"><span>body</span><span>360–440</span><span>15 → 18px</span><span>normal · sentence</span></div>
+    <div class="st-row"><span>label · kicker</span><span>600–680</span><span>11 → 13px</span><span>+22% · UPPER</span></div>
+    <div class="st-row"><span>metadata</span><span>360–440</span><span>11 → 13px</span><span>+4% · ink-3</span></div>
+  </div>
+  <p class="spec-note reveal"><b>The floor is law:</b> nothing a reader must decode to use the product is set below <b>wght&nbsp;360</b> or <b>11px</b>. The thin display weights live only at large sizes.</p>
+
+  <p class="comp-label spaced reveal">fallback stack — for when the variable font doesn't load</p>
+  <div class="codeblock reveal">font-family: 'Roboto Flex', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;</div>
+  <p class="spec-note reveal">Humanist-sans on every platform, so the silhouette survives a failed load. Fallback faces carry no thin display cut, so the display role <b>drops to weight 300</b> rather than 250 — the masthead never thins into invisibility:</p>
+  <div class="codeblock reveal">@supports not (font-variation-settings: 1) {
+  .giant, .s-display, .bleed-head { font-weight: 300; }
+}</div>
+
+  <p class="comp-label spaced reveal">responsive scaling — one ramp, every screen</p>
+  <p class="spec-note reveal">Every display size is a <code>clamp(min, fluid, max)</code>, so a 72px page title lands near <b>38px</b> on a 320px phone with no breakpoint. The <code>min</code> is the legibility floor, the <code>max</code> is the desktop voice, and the <code>vw</code> term interpolates between them. Body and labels hold fixed sizes — only display type scales.</p>
+</section>
+
+<!-- Color + Ramp -->
+<section class="block" id="color">
+  <div class="block-head reveal">
+    <span class="idx">03</span>
+    <h2>color + ramp</h2>
+    <span class="tail"></span>
+  </div>
+  <p class="lede reveal">A <b>dark canvas</b> is home; a <b>light canvas</b> is the rare exception for long reading. The accent is now a <b>tonal ramp</b>, so hovers, focus, and active states come from the accent itself — no grey borders required.</p>
+
+  <div class="canvasrow reveal">
+    <div class="dark">
+      <small>primary canvas</small>
+      <h4>quiet &amp; dark</h4>
+      <p style="color:var(--ink-2);max-width:340px;margin-top:10px">#0c0c0c base, white ink, <span class="accent">orange</span> signal.</p>
+    </div>
+    <div class="lite">
+      <small>reading canvas</small>
+      <h4>bright &amp; rare</h4>
+      <p style="color:#444;max-width:340px;margin-top:10px">#f4f4f4 base for article bodies. Accent deepens to #c9540a.</p>
+    </div>
+  </div>
+
+  <p class="comp-label reveal">accent tonal ramp — wash · resting · half-lit · signal · hover · pressed</p>
+  <div class="ramp reveal">
+    <div class="r1">08%</div>
+    <div class="r2">16%</div>
+    <div class="r3">28%</div>
+    <div class="r4">f2660a</div>
+    <div class="r5">ff8636</div>
+    <div class="r6">c9540a</div>
+  </div>
+
+  <!-- Tonal ramp usage examples -->
+  <p class="comp-label reveal">tonal ramp in use — resting / hover / active</p>
+  <div class="ramp-examples reveal">
+    <div class="ex">
+      <button class="resting">Resting state</button>
+      <div class="label">var(--zune-16)</div>
+    </div>
+    <div class="ex">
+      <button class="hover">Hover / Focus</button>
+      <div class="label">var(--zune)</div>
+    </div>
+    <div class="ex">
+      <button class="active">Active / Pressed</button>
+      <div class="label">var(--zune-bright)</div>
+    </div>
+  </div>
+
+  <div class="swatches reveal">
+    <div class="swatch" style="background:var(--zune)"><div class="cr">blk 6.7:1</div><div><div class="nm">zune orange</div><div class="hx">#F2660A</div></div></div>
+    <div class="swatch" style="background:var(--c-world)"><div class="cr">blk 7.2:1</div><div><div class="nm">world</div><div class="hx">#1BA1E2</div></div></div>
+    <div class="swatch" style="background:var(--c-politics)"><div class="cr">blk 5.7:1</div><div><div class="nm">politics</div><div class="hx">#FF311D</div></div></div>
+    <div class="swatch" style="background:var(--c-tech)"><div class="cr">blk 7.4:1</div><div><div class="nm">tech</div><div class="hx">#00ABA9</div></div></div>
+    <div class="swatch" style="background:var(--c-culture)"><div class="cr">blk 5.7:1</div><div><div class="nm">culture</div><div class="hx">#FF0D8E</div></div></div>
+    <div class="swatch" style="background:var(--c-sport)"><div class="cr">blk 9.6:1</div><div><div class="nm">sport</div><div class="hx">#8CBF26</div></div></div>
+    <div class="swatch" style="background:var(--c-money)"><div class="cr">blk 5.7:1</div><div><div class="nm">business</div><div class="hx">#718D68</div></div></div>
+    <div class="swatch" style="background:var(--c-violet)"><div class="cr">blk 5.7:1</div><div><div class="nm">opinion</div><div class="hx">#BE4EFF</div></div></div>
+  </div>
+  <p class="contrast-note reveal">Each accent clears <b>5.7:1 with black ink</b>. Black sits on the accent, never white. --ink-3 was lifted to #9a9a9a for 6.9:1 on dark canvas.</p>
+
+  <p class="comp-label reveal">core design tokens (click to copy)</p>
+  <div class="tokens reveal">
+    <div class="token"><div class="label">backgrounds</div><div class="val">--bg: #0c0c0c</div><div class="val">--bg-2: #161616</div><div class="desc">Primary dark canvas.</div><button class="copy" data-copy="--bg: #0c0c0c; --bg-2: #161616;">copy</button></div>
+    <div class="token"><div class="label">accent ramp</div><div class="val">--zune: #f2660a</div><div class="val">--zune-28: 28% wash</div><div class="val">--zune-bright: #ff8636</div><div class="desc">Signature + states. No borders needed.</div><button class="copy" data-copy="--zune: #f2660a; --zune-28: rgba(242,102,10,.28); --zune-bright: #ff8636;">copy</button></div>
+    <div class="token"><div class="label">type axes</div><div class="val">wght 100–1000</div><div class="val">opsz 8–144 (auto)</div><div class="desc">Weight tied to scale; optical sizing for legibility.</div><button class="copy" data-copy="font-variation-settings: 'wght' 360; font-optical-sizing: auto;">copy</button></div>
+    <div class="token"><div class="label">motion</div><div class="val">--ease: cubic-bezier(.2,.88,.2,1)</div><div class="val">--dur-base: 260ms</div><div class="desc">Fast, directional, and yielded under reduced-motion.</div><button class="copy" data-copy="--ease: cubic-bezier(.2, .88, .2, 1); --dur-base: 260ms;">copy</button></div>
+  </div>
+
+  <p class="comp-label spaced reveal">semantic tokens — the ramp, named by job</p>
+  <div class="tokens reveal">
+    <div class="token"><div class="label">accent states</div><div class="val">--accent-wash → zune-08</div><div class="val">--accent-rest → zune-28</div><div class="val">--accent → zune</div><div class="val">--accent-hover → zune-bright</div><div class="val">--accent-pressed → zune-deep</div><div class="desc">Every interactive accent state maps to a rung of the ramp.</div></div>
+    <div class="token"><div class="label">focus &amp; disabled</div><div class="val">--focus-ring → zune</div><div class="val">--focus-offset → 3px</div><div class="val">--disabled-bg → #1a1a1a</div><div class="val">--disabled-ink → #5a5a5a</div><div class="desc">Focus always uses the accent. Disabled sits intentionally below AA — inactive controls are exempt.</div></div>
+  </div>
+
+  <p class="comp-label spaced reveal">status colors — drawn from the accent palette, never bolted on</p>
+  <div class="swatches reveal">
+    <div class="swatch" style="background:var(--state-error)"><div class="cr">blk 5.7:1</div><div><div class="nm">error</div><div class="hx">#FF311D</div></div></div>
+    <div class="swatch" style="background:var(--state-success)"><div class="cr">blk 9.6:1</div><div><div class="nm">success</div><div class="hx">#8CBF26</div></div></div>
+    <div class="swatch" style="background:var(--state-warning)"><div class="cr">blk 9.9:1</div><div><div class="nm">warning</div><div class="hx">#E0A93B</div></div></div>
+    <div class="swatch" style="background:var(--state-info)"><div class="cr">blk 7.2:1</div><div><div class="nm">info</div><div class="hx">#1BA1E2</div></div></div>
+  </div>
+  <p class="spec-note reveal">Status hues reuse the category palette so they feel native, and like every fill they take <b>black ink</b>. Reserve them for system feedback — never decoration.</p>
+
+  <p class="comp-label spaced reveal">contrast reference — measured, not assumed</p>
+  <div class="spec-table cols-5 a11y reveal">
+    <div class="st-row st-head"><span>foreground</span><span>background</span><span>ratio</span><span>wcag</span><span>use</span></div>
+    <div class="st-row"><span>white #fff</span><span>#0c0c0c</span><span>19.6:1</span><span>AAA</span><span>headlines, body</span></div>
+    <div class="st-row"><span>ink-2 #c2c2c2</span><span>#0c0c0c</span><span>11.0:1</span><span>AAA</span><span>lede, secondary</span></div>
+    <div class="st-row"><span>ink-3 #9a9a9a</span><span>#0c0c0c</span><span>6.9:1</span><span>AA</span><span>labels, metadata</span></div>
+    <div class="st-row"><span>zune #f2660a</span><span>#0c0c0c</span><span>6.2:1</span><span>AA</span><span>links / accent text</span></div>
+    <div class="st-row"><span>black #000</span><span>any accent fill</span><span>≥5.7:1</span><span>AA</span><span>text on color</span></div>
+    <div class="st-row"><span>#111</span><span>#f4f4f4 reading</span><span>17.2:1</span><span>AAA</span><span>article body</span></div>
+    <div class="st-row dim"><span>disabled #5a5a5a</span><span>#1a1a1a</span><span>2.5:1</span><span>exempt</span><span>inactive controls</span></div>
+  </div>
+</section>
+
+<!-- Layout -->
+<section class="block" id="layout">
+  <div class="block-head reveal">
+    <span class="idx">04</span>
+    <h2>layout</h2>
+    <span class="tail"></span>
+  </div>
+  <p class="lede reveal">Beneath the three signature structures — <b>panorama</b>, <b>pivot</b>, and <b>tiles</b> — sits an ordinary, strict skeleton: one spacing scale, a twelve-column grid, four breakpoints, and a vertical rhythm. The drama is in the type and motion; the bones are boring on purpose.</p>
+
+  <p class="comp-label reveal">spacing scale — a 4px base, every gap and pad drawn from it</p>
+  <div class="scale reveal">
+    <div class="sc"><i style="width:4px"></i><span>4 · 3xs</span></div>
+    <div class="sc"><i style="width:8px"></i><span>8 · 2xs</span></div>
+    <div class="sc"><i style="width:12px"></i><span>12 · xs</span></div>
+    <div class="sc"><i style="width:16px"></i><span>16 · sm</span></div>
+    <div class="sc"><i style="width:24px"></i><span>24 · md</span></div>
+    <div class="sc"><i style="width:32px"></i><span>32 · lg</span></div>
+    <div class="sc"><i style="width:48px"></i><span>48 · xl</span></div>
+    <div class="sc"><i style="width:64px"></i><span>64 · 2xl</span></div>
+    <div class="sc"><i style="width:96px"></i><span>96 · 3xl</span></div>
+    <div class="sc"><i style="width:128px"></i><span>128 · 4xl</span></div>
+  </div>
+  <p class="spec-note reveal">Never an arbitrary value. Component interiors lean on <b>16–32</b>; section rhythm on <b>64–128</b>. Vertical rhythm: stacks come from the scale, body line-height holds at <b>1.55</b>, section padding is <code>clamp(70px, 12vh, 140px)</code>.</p>
+
+  <p class="comp-label spaced reveal">grid &amp; breakpoints</p>
+  <div class="spec-table cols-4 reveal">
+    <div class="st-row st-head"><span>tier</span><span>range</span><span>columns</span><span>behaviour</span></div>
+    <div class="st-row"><span>mobile</span><span>&lt; 600px</span><span>1</span><span>everything stacks; pano pans or "view all"</span></div>
+    <div class="st-row"><span>narrow</span><span>600–959px</span><span>2–4 auto-fit</span><span>grids collapse, type clamps down</span></div>
+    <div class="st-row"><span>wide</span><span>960–1439px</span><span>up to 12</span><span>full layout, default voice</span></div>
+    <div class="st-row"><span>ultrawide</span><span>≥ 1440px</span><span>12, capped</span><span>content max 1280px, centered</span></div>
+  </div>
+  <p class="spec-note reveal">A <b>12-column</b> grid, <b>24px gutter</b>, and the <code>--gut</code> margin <code>clamp(20px, 5vw, 80px)</code>. Most grids are <code>auto-fit minmax()</code> rather than fixed columns, so they reflow with no per-breakpoint code — the four tiers are guardrails, not switches.</p>
+
+  <p class="comp-label spaced reveal">the panorama — peek, snap, keyboard operable, with vertical fallback</p>
+  <div class="demo-wrap pano-shell reveal">
+    <span class="demo-tag">panorama · scroll or use arrows</span>
+    <div class="pano-nav">
+      <button id="panoPrev" aria-label="Previous stories">‹</button>
+      <button id="panoNext" aria-label="Next stories">›</button>
+    </div>
+    <div class="panodemo" id="panodemo" tabindex="0" aria-label="Horizontal story panorama. Use left and right arrows or scroll.">
+      <div class="panotrack">
+        <div class="panoghost" id="panoghost">front&nbsp;<b>·</b>&nbsp;today</div>
+        <div class="panel lead" tabindex="0">
+          <div class="cat" style="color:var(--c-politics)">politics · lead</div>
+          <div class="img"><i style="background:linear-gradient(135deg,#2a0500,#ff311d)"></i></div>
+          <h5>River crossing vote enters its final hour</h5>
+          <div class="by">by M. Okafor · 6 min</div>
+        </div>
+        <div class="panel" tabindex="0">
+          <div class="cat" style="color:var(--c-world)">world</div>
+          <div class="img"><i style="background:linear-gradient(135deg,#06283a,#1ba1e2)"></i></div>
+          <h5>Coastal nations sign a new shipping accord</h5>
+          <div class="by">by R. Adeyemi · 4 min</div>
+        </div>
+        <div class="panel" tabindex="0">
+          <div class="cat" style="color:var(--c-tech)">tech</div>
+          <div class="img"><i style="background:linear-gradient(135deg,#002221,#00aba9)"></i></div>
+          <h5>The quiet return of the dedicated music device</h5>
+          <div class="by">by L. Hartman · 5 min</div>
+        </div>
+        <div class="panel" tabindex="0">
+          <div class="cat" style="color:var(--c-culture)">culture</div>
+          <div class="img"><i style="background:linear-gradient(135deg,#2a0019,#ff0d8e)"></i></div>
+          <h5>An archive of forgotten interface music, restored</h5>
+          <div class="by">by S. Velez · 3 min</div>
+        </div>
+        <div class="panel" tabindex="0">
+          <div class="cat" style="color:var(--c-sport)">sport</div>
+          <div class="img"><i style="background:linear-gradient(135deg,#1a2400,#8cbf26)"></i></div>
+          <h5>Underdogs take the title in extra time</h5>
+          <div class="by">by D. Cole · 2 min</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="pano-fallback reveal">On narrow screens the same stories <b>stack vertically</b>. <a href="#news" class="view-all-btn">View all stories ↓</a></p>
+
+  <p class="comp-label spaced reveal">the pivot — active tab is heavier + underlined; arrow keys work</p>
+  <div class="pivot reveal">
+    <div class="pivot-tabs" id="pivotTabs">
+      <button class="on" data-pane="p1">for you</button>
+      <button data-pane="p2">following</button>
+      <button data-pane="p3">trending</button>
+    </div>
+    <div class="pivot-body">
+      <div class="pivot-pane on" id="p1">
+        <p style="color:var(--ink-2);font-variation-settings:'wght' 360;max-width:560px;margin-bottom:20px">A personalized river of stories. The active tab is heavier <i>and</i> underlined.</p>
+        <div class="pivot-list">
+          <div class="pl-item"><span class="pl-dot" style="background:var(--c-tech)"></span><span class="pl-cat">tech</span><span>The quiet return of the dedicated music device</span><span class="pl-meta">5 min</span></div>
+          <div class="pl-item"><span class="pl-dot" style="background:var(--c-culture)"></span><span class="pl-cat">culture</span><span>An archive of forgotten interface music, restored</span><span class="pl-meta">3 min</span></div>
+          <div class="pl-item"><span class="pl-dot" style="background:var(--c-world)"></span><span class="pl-cat">world</span><span>Coastal nations sign a new accord on shipping lanes</span><span class="pl-meta">4 min</span></div>
+        </div>
+      </div>
+      <div class="pivot-pane" id="p2">
+        <p style="color:var(--ink-2);font-variation-settings:'wght' 360;max-width:560px;margin-bottom:20px">Only the accounts and topics you follow.</p>
+        <div class="pivot-list">
+          <div class="pl-item"><span class="pl-dot" style="background:var(--c-tech)"></span><span class="pl-cat">tech</span><span><b style="font-variation-settings:'wght' 600;color:var(--ink)">@lhartman</b> on why some devices refuse to die</span><span class="pl-meta">12m</span></div>
+          <div class="pl-item"><span class="pl-dot" style="background:var(--c-politics)"></span><span class="pl-cat">politics</span><span><b style="font-variation-settings:'wght' 600;color:var(--ink)">@mokafor</b> live from the council vote</span><span class="pl-meta">40m</span></div>
+        </div>
+      </div>
+      <div class="pivot-pane" id="p3">
+        <p style="color:var(--ink-2);font-variation-settings:'wght' 360;max-width:560px;margin-bottom:20px">What's moving right now, ranked.</p>
+        <div class="pivot-list">
+          <div class="pl-item"><span class="pl-rank">1</span><span>#metro</span><span class="pl-meta">12.4k posts</span></div>
+          <div class="pl-item"><span class="pl-rank">2</span><span>river crossing vote</span><span class="pl-meta">8.1k posts</span></div>
+          <div class="pl-item"><span class="pl-rank">3</span><span>#interfacemusic</span><span class="pl-meta">3.9k posts</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="comp-label spaced reveal">tiles — flat, sharp-cornered, color-coded with text label</p>
+  <div class="tilegrid reveal stagger">
+    <div class="tile tall" style="background:var(--c-politics);color:#000"><div class="tt">politics · live</div><h6>Vote count enters its final hour</h6></div>
+    <div class="tile wide" style="background:var(--c-world);color:#000"><div class="tt">world</div><h6 class="sm">Accord signed by 14 nations</h6></div>
+    <div class="tile" style="background:var(--bg-2);color:#fff"><div class="tt" style="color:var(--c-tech)">tech</div><h6 class="sm">Music device revival</h6></div>
+    <div class="tile" style="background:var(--c-money);color:#000"><div class="tt">business</div><h6 class="sm">Markets up 2%</h6></div>
+    <div class="tile wide" style="background:var(--bg-2);color:#fff"><div class="tt" style="color:var(--c-culture)">culture</div><h6 class="sm">The lost interface music, restored</h6></div>
+    <div class="tile" style="background:var(--c-sport);color:#000"><div class="tt">sport</div><h6 class="sm">Underdogs win it</h6></div>
+  </div>
+</section>
+
+<!-- News -->
+<section class="block" id="news">
+  <div class="block-head reveal">
+    <span class="idx">05</span>
+    <h2>news parts</h2>
+    <span class="tail"></span>
+  </div>
+  <p class="lede reveal">A kicker, headline, whisper of metadata, and the category color as the only ornament. The accent bar now rests at 28% opacity so it reads as interactive before hover.</p>
+
+  <p class="comp-label reveal">breaking bar</p>
+  <div class="breaking reveal" style="margin-bottom:46px">
+    <div class="flag">● breaking</div>
+    <div class="txt"><b>Council approves river crossing</b>&nbsp;— first new bridge in the district for a generation.</div>
+  </div>
+
+  <p class="comp-label reveal">article cards — accent bar visible at rest (28%)</p>
+  <div class="comp-grid reveal stagger" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
+    <a class="newscard" href="#news" tabindex="0">
+      <div class="ph"><i style="background:linear-gradient(135deg,#06283a,#1ba1e2)"></i><span class="cat" style="background:var(--c-world)">world</span></div>
+      <div class="pad"><h5>Coastal nations sign a new accord on shipping lanes</h5><div class="foot"><span class="au">R. Adeyemi</span><span>4 min · today</span></div></div>
+    </a>
+    <a class="newscard" href="#news" tabindex="0">
+      <div class="ph"><i style="background:linear-gradient(135deg,#002221,#00aba9)"></i><span class="cat" style="background:var(--c-tech)">tech</span></div>
+      <div class="pad"><h5>The quiet return of the dedicated music device</h5><div class="foot"><span class="au">L. Hartman</span><span>5 min · today</span></div></div>
+    </a>
+    <a class="newscard" href="#news" tabindex="0">
+      <div class="ph"><i style="background:linear-gradient(135deg,#2a0019,#ff0d8e)"></i><span class="cat" style="background:var(--c-culture)">culture</span></div>
+      <div class="pad"><h5>An archive of forgotten interface music, restored</h5><div class="foot"><span class="au">S. Velez</span><span>3 min · 1h ago</span></div></div>
+    </a>
+  </div>
+
+  <p class="comp-label spaced reveal">honest bleed headline — informative line stays whole</p>
+  <div class="reveal" style="max-width:880px">
+    <div class="bleed-head">
+      <span class="keep">the river crossing vote <em>finally</em> passes</span>
+      <span class="echo" aria-hidden="true">river crossing · river crossing · river crossing</span>
+    </div>
+    <div style="color:var(--ink-3);font-size:14px">A decade of debate ends with a 7–2 council decision. Construction begins next spring.</div>
+  </div>
+</section>
+
+<!-- Social -->
+<section class="block" id="social">
+  <div class="block-head reveal">
+    <span class="idx">06</span>
+    <h2>social parts</h2>
+    <span class="tail"></span>
+  </div>
+  <p class="lede reveal">Profiles at panorama scale, flat posts, tiny uppercase reactions. Every component now ships a <b>compact mode</b> for long feeds. A minimal comment thread shows how the language scales to conversation.</p>
+
+  <p class="comp-label reveal">profile header</p>
+  <div class="profhead reveal" style="margin-bottom:46px">
+    <button class="follow" id="followBtn">+ follow</button>
+    <div class="bigname">lena hartman</div>
+    <div class="handle">@lhartman · tech &amp; gadgets desk</div>
+    <div class="bio">Writing about the devices we keep in our pockets and why some of them refuse to die. Former synth repair tech.</div>
+    <div class="stats">
+      <div><div class="n">1.2k</div><div class="l">posts</div></div>
+      <div><div class="n">84k</div><div class="l">followers</div></div>
+      <div><div class="n">312</div><div class="l">following</div></div>
+    </div>
+  </div>
+
+  <p class="comp-label reveal">feed post + density toggle (persisted)</p>
+  <div class="reveal" style="max-width:680px">
+    <div class="density-bar">
+      <span class="lbl">density</span>
+      <div class="seg" id="densitySeg">
+        <button class="on" data-d="comfortable">comfortable</button>
+        <button data-d="compact">compact</button>
+      </div>
+    </div>
+    <div class="feed" id="feed">
+      <div class="row"><div class="av" style="background:var(--c-tech)">LH</div><div class="main"><div class="line1"><span class="n">Lena Hartman</span><span class="h">@lhartman</span><span class="t">12m</span></div><div class="txt">the interface still feels faster than half the apps on my phone <span>#metro</span></div></div></div>
+      <div class="row"><div class="av" style="background:var(--c-politics)">MO</div><div class="main"><div class="line1"><span class="n">M. Okafor</span><span class="h">@mokafor</span><span class="t">40m</span></div><div class="txt">live from the council chamber — vote expected within the hour</div></div></div>
+      <div class="row"><div class="av" style="background:var(--c-culture)">SV</div><div class="main"><div class="line1"><span class="n">S. Velez</span><span class="h">@svelez</span><span class="t">1h</span></div><div class="txt">spent the weekend restoring lost interface music</div></div></div>
+    </div>
+  </div>
+
+  <!-- Comment thread (NEW) -->
+  <p class="comp-label spaced reveal">minimal comment thread</p>
+  <div class="comment-thread reveal">
+    <div class="comment">
+      <div class="av" style="background:var(--c-tech)">LH</div>
+      <div class="body">
+        <div class="meta"><b>Lena Hartman</b> · 14m</div>
+        <div class="txt">this is exactly why I still keep an old Zune in the drawer. the tactility is unmatched.</div>
+        <div class="reply">reply</div>
+      </div>
+    </div>
+    <div class="comment">
+      <div class="av" style="background:var(--c-culture)">SV</div>
+      <div class="body">
+        <div class="meta"><b>S. Velez</b> · 9m</div>
+        <div class="txt">agreed. the click of the wheel is pure muscle memory at this point.</div>
+        <div class="reply">reply</div>
+      </div>
+    </div>
+  </div>
+
+  <p class="comp-label spaced reveal">activity — colored bar + text label</p>
+  <div class="reveal">
+    <div class="notif"><span class="bar" style="background:var(--zune)"></span><span class="ico" style="background:var(--zune)">+</span><span class="kind" style="color:var(--zune)">follow</span><span class="nt"><b>R. Adeyemi</b> started following you</span><span class="nw">2m</span></div>
+    <div class="notif"><span class="bar" style="background:var(--c-culture)"></span><span class="ico" style="background:var(--c-culture)">♥</span><span class="kind" style="color:var(--c-culture)">like</span><span class="nt"><b>3 people</b> liked your post about media players</span><span class="nw">18m</span></div>
+    <div class="notif"><span class="bar" style="background:var(--c-tech)"></span><span class="ico" style="background:var(--c-tech)">@</span><span class="kind" style="color:var(--c-tech)">mention</span><span class="nt"><b>S. Velez</b> mentioned you in a reply</span><span class="nw">1h</span></div>
+  </div>
+</section>
+
+<!-- Motion -->
+<section class="block" id="motion">
+  <div class="block-head reveal">
+    <span class="idx">07</span>
+    <h2>motion</h2>
+    <span class="tail"></span>
+  </div>
+  <p class="lede reveal">Fast, fluid, directional. Short durations and a snappy ease. The big difference in v5: motion is part of the brand but <b>not a requirement</b>. When reduced-motion is requested, the structure stays and the movement stops.</p>
+
+  <div class="motiongrid reveal stagger">
+    <div class="motioncard m-slide"><h4>slide</h4><p>Panes enter from the offscreen edge. Panorama and pivot move horizontally.</p><div class="demo"><span class="blk"></span></div></div>
+    <div class="motioncard m-stack"><h4>stagger</h4><p>Items rise and fade in sequence on load.</p><div class="demo"><span class="blk"></span><span class="blk"></span><span class="blk"></span></div></div>
+    <div class="motioncard m-turn"><h4>turnstile</h4><p>Content rotates in around its leading edge.</p><div class="demo"><span class="blk"></span></div></div>
+    <div class="motioncard m-lift"><h4>micro lift</h4><p>Small upward shift + shadow on interactive cards.</p><div class="demo"><span class="blk"></span></div></div>
+    <div class="motioncard m-push"><h4>content push</h4><p>Elements slide forward on interaction.</p><div class="demo"><span class="blk"></span></div></div>
+  </div>
+
+  <div class="motion-tokens reveal">
+    <strong style="color:var(--ink-2);font-variation-settings:'wght' 600">Motion tokens:</strong>
+    <code>--ease: cubic-bezier(.2,.88,.2,1)</code> &nbsp;•&nbsp;
+    <code>--dur-fast: 160ms</code> &nbsp;•&nbsp;
+    <code>--dur-base: 260ms</code> &nbsp;•&nbsp;
+    <code>--dur-slow: 380ms</code>
+  </div>
+
+  <p class="comp-label spaced reveal">motion tokens by component</p>
+  <div class="spec-table cols-3 reveal">
+    <div class="st-row st-head"><span>component</span><span>token</span><span>duration</span></div>
+    <div class="st-row"><span>panorama / pivot pane</span><span>--dur-slow</span><span>380ms</span></div>
+    <div class="st-row"><span>card lift · content push</span><span>--dur-base</span><span>260ms</span></div>
+    <div class="st-row"><span>tile press · hover color</span><span>--dur-fast</span><span>160ms</span></div>
+    <div class="st-row"><span>weight-on-focus</span><span>--dur-base</span><span>260ms</span></div>
+    <div class="st-row"><span>scroll reveal · one-time</span><span>entrance</span><span>700ms</span></div>
+  </div>
+
+  <p class="comp-label spaced reveal">reduced-motion mapping — what each animation becomes</p>
+  <div class="spec-table cols-2 reveal">
+    <div class="st-row st-head"><span>default animation</span><span>reduced-motion behaviour</span></div>
+    <div class="st-row"><span>pano / pivot slide</span><span>instant pane swap, no translate</span></div>
+    <div class="st-row"><span>scroll reveal (fade + rise)</span><span>appears in place, fully visible</span></div>
+    <div class="st-row"><span>stagger cascade</span><span>all items appear at once</span></div>
+    <div class="st-row"><span>parallax ghost</span><span>static, no scroll-linked motion</span></div>
+    <div class="st-row"><span>looping motion demos</span><span>frozen on a representative frame</span></div>
+    <div class="st-row"><span>micro-lift · push (hover)</span><span>color / weight change only, no transform</span></div>
+    <div class="st-row"><span>weight-on-focus</span><span>kept, applied instantly</span></div>
+  </div>
+
+  <div class="rm-note reveal">
+    <div class="t">reduced motion</div>
+    <p>Under <code>@media (prefers-reduced-motion: reduce)</code> all slides, parallax, looping demos and staggered reveals are disabled. Content simply appears. Nothing becomes unreachable.</p>
+  </div>
+</section>
+
+<!-- Do / Don't -->
+<section class="block">
+  <div class="block-head reveal">
+    <span class="idx">08</span>
+    <h2>do · don't</h2>
+    <span class="tail"></span>
+  </div>
+  <div class="ddgrid reveal">
+    <div class="dd do">
+      <div class="tag"><span></span>do</div>
+      <ul>
+        <li>Let one <b>vivid accent</b> own each section.</li>
+        <li>Build hierarchy from <b>one variable typeface</b>.</li>
+        <li>Reserve <b>thinnest weights for large sizes</b>.</li>
+        <li>Bleed only <b>words the reader already knows</b>.</li>
+        <li>Give interactive elements a <b>resting state</b> that reads as live.</li>
+        <li>Pair every <b>category color with a word</b>.</li>
+        <li>Use <b>black ink on accent fills</b> (≥ 5.7:1).</li>
+        <li>Ship <b>compact mode</b> and <b>reduced-motion path</b> for every component.</li>
+      </ul>
+    </div>
+    <div class="dd dont">
+      <div class="tag"><span></span>don't</div>
+      <ul>
+        <li>Add <b>gradients, bevels, glass or drop-shadows</b>.</li>
+        <li>Clip the <b>informative part of a headline</b>.</li>
+        <li>Set <b>body or labels in the lightest weights</b>.</li>
+        <li>Hide content behind a <b>horizontal pan with no fallback</b>.</li>
+        <li>Rely on <b>hover alone</b> to reveal interactivity.</li>
+        <li>Encode meaning in <b>color only</b>.</li>
+        <li>Put <b>white text on the light accents</b>.</li>
+        <li>Let motion run with <b>no reduced-motion escape</b>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- Tokens -->
+<section class="block" id="tokens">
+  <div class="block-head reveal"><span class="idx">09</span><h2>tokens</h2><span class="tail"></span></div>
+  <p class="lede reveal">Every value in this manifesto resolves to a named token. Six families — <b>color, type, space, motion, state, breakpoints</b> — exported as plain CSS custom properties and as JSON, so the words and the build share one source of truth.</p>
+  <div class="tokens reveal">
+    <div class="token"><div class="label">color</div><div class="val">--bg · --ink · --line</div><div class="val">--zune + 08/16/28/bright/deep</div><div class="val">--c-world … --c-violet</div><div class="desc">Canvas, ink, lines, accent ramp, category palette, status hues.</div></div>
+    <div class="token"><div class="label">type</div><div class="val">--w-display … --w-label</div><div class="val">opsz 8–144 · wght 100–1000</div><div class="desc">Weight per role; sizes via clamp().</div></div>
+    <div class="token"><div class="label">space</div><div class="val">--space-3xs … --space-4xl</div><div class="val">4 → 128px</div><div class="desc">One scale for every gap and pad.</div></div>
+    <div class="token"><div class="label">motion</div><div class="val">--ease</div><div class="val">--dur-fast / base / slow</div><div class="desc">Timing plus the single shared ease.</div></div>
+    <div class="token"><div class="label">state</div><div class="val">--accent-rest / hover / pressed</div><div class="val">--state-error / success / warning / info</div><div class="desc">Semantic aliases over the ramp and palette.</div></div>
+    <div class="token"><div class="label">breakpoints</div><div class="val">--bp-narrow / wide / ultra</div><div class="val">600 / 960 / 1440px</div><div class="desc">Four tiers; most grids reflow without them.</div></div>
+  </div>
+  <p class="spec-note reveal">Ships alongside this document as <code>codex-tokens.css</code> (custom properties) and <code>codex-tokens.json</code> (Style&nbsp;Dictionary / Figma&nbsp;Tokens shape).</p>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="big reveal">content <em>over</em> chrome.</div>
+  <div class="row reveal">
+    <span>the codex v6 — zune, refined</span>
+    <span>one variable typeface · one accent ramp · dark canvas</span>
+    <span>recognizable · usable · respectful</span>
+  </div>
+</footer>
+
+<script>
+/* Safe localStorage — never let blocked/disabled storage break the page */
+const store = {
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+};
+
+/* Scroll reveals */
+const io = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} });
+},{threshold:.12});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+/* Panorama */
+const pd = document.getElementById('panodemo');
+const ghost = document.getElementById('panoghost');
+if(pd && ghost){
+  pd.addEventListener('scroll',()=>{ ghost.style.transform = 'translateX(' + (pd.scrollLeft * 0.4) + 'px)'; });
+}
+const pdNext = document.getElementById('panoNext');
+const pdPrev = document.getElementById('panoPrev');
+if(pd && pdNext && pdPrev){
+  const step = ()=> Math.round(pd.clientWidth * 0.72);
+  pdNext.addEventListener('click',()=> pd.scrollBy({left: step(), behavior:'smooth'}));
+  pdPrev.addEventListener('click',()=> pd.scrollBy({left:-step(), behavior:'smooth'}));
+  pd.addEventListener('keydown',(e)=>{
+    if(e.key==='ArrowRight'){ e.preventDefault(); pd.scrollBy({left: step(), behavior:'smooth'}); }
+    if(e.key==='ArrowLeft'){ e.preventDefault(); pd.scrollBy({left:-step(), behavior:'smooth'}); }
+  });
+}
+
+/* Variable weight slider */
+const vfRange = document.getElementById('vfRange');
+const vfDrag = document.getElementById('vfDrag');
+const vfReadout = document.getElementById('vfReadout');
+if(vfRange && vfDrag){
+  vfRange.addEventListener('input',()=>{
+    vfDrag.style.fontVariationSettings = "'wght' " + vfRange.value;
+    vfReadout.textContent = 'wght ' + vfRange.value + ' — drag the slider';
+  });
+}
+
+/* Pivot tabs with keyboard arrows */
+const tabs = document.getElementById('pivotTabs');
+function activate(b){
+  if(!b) return;
+  tabs.querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  document.querySelectorAll('.pivot-pane').forEach(p=>p.classList.remove('on'));
+  const pane = document.getElementById(b.dataset.pane);
+  pane.classList.remove('on'); void pane.offsetWidth; pane.classList.add('on');
+}
+if(tabs){
+  tabs.addEventListener('click',(ev)=>activate(ev.target.closest('button')));
+  tabs.addEventListener('keydown',(ev)=>{
+    const btns=[...tabs.querySelectorAll('button')];
+    const i=btns.indexOf(document.activeElement);
+    if(i<0) return;
+    if(ev.key==='ArrowRight'){ ev.preventDefault(); const n=btns[(i+1)%btns.length]; n.focus(); activate(n); }
+    if(ev.key==='ArrowLeft'){ ev.preventDefault(); const n=btns[(i-1+btns.length)%btns.length]; n.focus(); activate(n); }
+  });
+}
+
+/* Density toggle + persistence */
+const densitySeg = document.getElementById('densitySeg');
+const feed = document.getElementById('feed');
+if(densitySeg && feed){
+  // Load saved preference
+  const saved = store.get('codex-density');
+  if(saved === 'compact'){
+    densitySeg.querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+    densitySeg.querySelector('[data-d="compact"]').classList.add('on');
+    feed.classList.add('compact');
+  }
+  densitySeg.addEventListener('click',(ev)=>{
+    const b = ev.target.closest('button'); if(!b) return;
+    densitySeg.querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    const mode = b.dataset.d;
+    feed.classList.toggle('compact', mode==='compact');
+    store.set('codex-density', mode);
+  });
+}
+
+/* Follow toggle */
+const fb = document.getElementById('followBtn');
+if(fb){
+  fb.addEventListener('click',()=>{
+    const on = fb.classList.toggle('off');
+    fb.textContent = on ? 'following' : '+ follow';
+  });
+}
+
+/* Like toggle */
+document.querySelectorAll('.reactions [data-like]').forEach(btn=>{
+  let n = 248;
+  btn.addEventListener('click',(e)=>{
+    e.preventDefault();
+    const liked = btn.classList.toggle('liked');
+    n = liked ? 249 : 248;
+    btn.innerHTML = '<span class="ic"></span> ' + (liked?'liked':'like') + ' · ' + n;
+  });
+});
+
+/* Mobile nav */
+const navToggle = document.getElementById('navToggle');
+const mainNav = document.getElementById('mainNav');
+if(navToggle && mainNav){
+  navToggle.addEventListener('click',()=>{
+    const isOpen = mainNav.classList.toggle('open');
+    navToggle.textContent = isOpen ? 'close' : 'menu';
+    navToggle.style.borderColor = isOpen ? 'var(--zune)' : 'var(--line-2)';
+  });
+  mainNav.querySelectorAll('a').forEach(link=>{
+    link.addEventListener('click',()=>{
+      mainNav.classList.remove('open');
+      navToggle.textContent = 'menu';
+      navToggle.style.borderColor = 'var(--line-2)';
+    });
+  });
+}
+
+/* Copy tokens */
+document.querySelectorAll('.token .copy').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const text = btn.dataset.copy;
+    navigator.clipboard.writeText(text).then(()=>{
+      const original = btn.textContent;
+      btn.textContent = 'copied';
+      setTimeout(()=>{ btn.textContent = original; }, 1400);
+    });
+  });
+});
+
+/* Dismissible changelog */
+const changelog = document.getElementById('changelog');
+const closeBtn = document.getElementById('closeChangelog');
+if(changelog && closeBtn){
+  // Check if previously dismissed
+  if(store.get('codex-changelog-dismissed') === 'true'){
+    changelog.style.display = 'none';
+  }
+  closeBtn.addEventListener('click',()=>{
+    changelog.style.transition = 'opacity .3s';
+    changelog.style.opacity = '0';
+    setTimeout(()=>{
+      changelog.style.display = 'none';
+      store.set('codex-changelog-dismissed', 'true');
+    }, 300);
+  });
+}
+</script>
+</body>
+</html>
